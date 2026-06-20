@@ -1,0 +1,72 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.95), transparent 30%),
+    linear-gradient(180deg, #fffdf8 0%, #fdf5ef 35%, #f8eef2 100%);
+  color: #435058;
+  font-family: "Avenir Next", "Trebuchet MS", "Verdana", sans-serif;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+input,
+select,
+textarea,
+button {
+  font: inherit;
+}
+
+::selection {
+  background: rgba(169, 194, 180, 0.35);
+}
+
+.soft-panel {
+  border: 1px solid rgba(169, 194, 180, 0.22);
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: 0 24px 60px rgba(86, 98, 112, 0.12);
+  backdrop-filter: blur(14px);
+}
+
+.field-shell {
+  border: 1px solid rgba(169, 194, 180, 0.28);
+  background: rgba(255, 255, 255, 0.9);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.field-shell:focus-within {
+  border-color: rgba(119, 151, 133, 0.8);
+  box-shadow: 0 0 0 4px rgba(221, 239, 229, 0.7);
+  transform: translateY(-1px);
+}
+
+.stagger-1 {
+  animation-delay: 0.05s;
+}
+
+.stagger-2 {
+  animation-delay: 0.12s;
+}
+
+.stagger-3 {
+  animation-delay: 0.19s;
+}

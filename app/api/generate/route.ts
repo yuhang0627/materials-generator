@@ -57,6 +57,11 @@ export async function POST(request: Request) {
         message =
           "OpenAI quota has been reached for this API key. Please check billing or use a key with available credits.";
       }
+
+      if (code === "credit_balance_too_low" || code === "rate_limit_error") {
+        message =
+          "Anthropic credit or rate limit has been reached for this API key. Please top up the account or try again later.";
+      }
     }
 
     if (

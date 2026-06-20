@@ -1,5 +1,8 @@
 import OpenAI from "openai";
-import type { GeneratedMaterial, MaterialFormValues } from "@/lib/material-generator";
+import type {
+  GeneratedMaterial,
+  MaterialFormValues
+} from "@/lib/material-generator";
 
 type AIContentShape = {
   wordList: string[];
@@ -12,17 +15,9 @@ type AIContentShape = {
   summary: string;
 };
 
-const defaultModel = process.env.OPENAI_MODEL || "gpt-4.1-mini";
-
-function getClient() {
-  const apiKey = process.env.OPENAI_API_KEY;
-
-  if (!apiKey) {
-    throw new Error("OPENAI_API_KEY is not configured.");
-  }
-
-  return new OpenAI({ apiKey });
-}
+const defaultOpenAIModel = process.env.OPENAI_MODEL || "gpt-4.1-mini";
+const defaultAnthropicModel =
+  process.env.ANTHROPIC_MODEL || "claude-haiku-4-5-20251001";
 
 function titleCase(text: string) {
   return text
@@ -38,9 +33,9 @@ function buildPrompt(form: MaterialFormValues) {
     "Return only valid JSON.",
     "Keep all language simple, warm, child-friendly, and easy to understand.",
     "Make the content suitable for early learners and special needs students.",
-    "Avoid scary content, abstract vocabulary, too many instructions, or overloaded worksheets.",
+    "Avoid complex words, scary content, too many instructions, or overloaded worksheets.",
     "Prefer concrete everyday words and short sentence models.",
-    "If the user's output type is very specific, still return all requested sections.",
+    "If the requested output type is narrow, still return all sections below.",
     "",
     "Teacher request:",
     `Theme: ${form.theme}`,
@@ -104,18 +99,80 @@ function parseAIJson(text: string): AIContentShape {
   };
 }
 
-export async function generateMaterialWithAI(
-  form: MaterialFormValues
-): Promise<GeneratedMaterial> {
-  const client = getClient();
+async function generateWithOpenAI(form: MaterialFormValues) {
+  const apiKey = process.env.OPENAI_API_KEY;
+
+  if (!apiKey) {
+    throw new Error("OPENAI_API_KEY is not configured.");
+  }
+
+  const client = new OpenAI({ apiKey });
   const response = await client.responses.create({
-    model: defaultModel,
+    model: defaultOpenAIModel,
     instructions:
       "You are a careful teaching assistant for Early Intervention Program educators.",
     input: buildPrompt(form)
   });
 
-  const parsed = parseAIJson(response.output_text);
+  return parseAIJson(response.output_text);
+}
+
+async function generateWithAnthropic(form: MaterialFormValues) {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+
+  if (!apiKey) {
+    throw new Error("ANTHROPIC_API_KEY is not configured.");
+  }
+
+  const response = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01"
+    },
+    body: JSON.stringify({
+      model: defaultAnthropicModel,
+      max_tokens: 1400,
+      system:
+        "You are a careful teaching assistant for Early Intervention Program educators. Return only valid JSON.",
+      messages: [
+        {
+          role: "user",
+          content: buildPrompt(form)
+        }
+      ]
+    })
+  });
+
+  const data = (await response.json()) as {
+    error?: { type?: string; message?: string };
+    content?: Array<{ type: string; text?: string }>;
+  };
+
+  if (!response.ok) {
+    const error = new Error(
+      data.error?.message || "Anthropic request failed."
+    ) as Error & { code?: string };
+    error.code = data.error?.type || String(response.status);
+    throw error;
+  }
+
+  const text =
+    data.content
+      ?.filter((item) => item.type === "text" && typeof item.text === "string")
+      .map((item) => item.text)
+      .join("\n") || "";
+
+  return parseAIJson(text);
+}
+
+export async function generateMaterialWithAI(
+  form: MaterialFormValues
+): Promise<GeneratedMaterial> {
+  const parsed = process.env.ANTHROPIC_API_KEY
+    ? await generateWithAnthropic(form)
+    : await generateWithOpenAI(form);
 
   return {
     id: `MAT-${Date.now().toString().slice(-6)}`,

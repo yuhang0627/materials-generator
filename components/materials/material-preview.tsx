@@ -65,7 +65,7 @@ function TopHeader({ material }: { material: GeneratedMaterial }) {
           <p className="text-xs font-bold uppercase tracking-[0.24em] text-sage">
             Material Preview
           </p>
-          <h2 className="mt-3 max-w-[34rem] font-display text-[2.5rem] font-bold leading-none text-ink">
+          <h2 className="mt-3 max-w-[34rem] font-display text-[2rem] font-bold leading-[0.92] text-ink sm:text-[2.4rem]">
             {layout.title}
           </h2>
           <p className="mt-3 text-base leading-7 text-ink/68">{layout.subtitle}</p>
@@ -103,16 +103,22 @@ function WordListPreview({ layout }: { layout: MaterialVisualLayout }) {
       <NameDateRow />
       <Hint text={layout.instructions} />
 
-      <div className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
-        <div className="rounded-[30px] bg-gradient-to-br from-cream via-white to-blush/35 p-5">
+      <CuteHeroPanel
+        title="Cute classroom word poster"
+        subtitle="A gentle print-ready page with visual cues, buddy stickers, and simple practice steps."
+      />
+
+      <div className="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
+        <div className="rounded-[30px] bg-gradient-to-br from-cream via-white to-mint/28 p-5">
           <SectionBanner
             eyebrow="I Can Learn"
-            title="Say, point, and read the focus words"
-            helper="Use one card at a time, then revisit all six together."
+            title="Say, point, and practice with a friend"
+            helper="Keep it playful: point together, clap together, then read the short sentence."
           />
-          <div className="mt-5 grid gap-4 sm:grid-cols-2">
-            {cards.map((card, index) => (
-              <TeachingCard key={`${card.title}-${index}`} card={card} index={index} />
+          <BuddyStrip />
+          <div className="mt-5 grid gap-3 sm:grid-cols-3">
+            {cards.slice(0, 3).map((card, index) => (
+              <MiniWordChip key={`${card.title}-${index}`} card={card} />
             ))}
           </div>
         </div>
@@ -143,6 +149,12 @@ function WordListPreview({ layout }: { layout: MaterialVisualLayout }) {
             ]}
           />
         </div>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {cards.map((card, index) => (
+          <TeachingCard key={`${card.title}-${index}`} card={card} index={index} />
+        ))}
       </div>
 
       <BottomNote
@@ -242,6 +254,7 @@ function VisualCardsPreview({ layout }: { layout: MaterialVisualLayout }) {
           title="Cut, point, and speak"
           helper="Use these as table cards, wall cards, or a quick matching game."
         />
+        <BuddyStrip />
 
         <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {layout.cards.map((card, index) => (
@@ -275,6 +288,7 @@ function PosterPreview({ layout }: { layout: MaterialVisualLayout }) {
   return (
     <div className="rounded-[34px] bg-gradient-to-b from-mint/35 via-cream to-blush/35 p-6">
       <div className="rounded-[28px] bg-white/85 p-6 text-center">
+        <PosterStickers />
         <p className="text-xs font-bold uppercase tracking-[0.22em] text-sage">
           Classroom Poster
         </p>
@@ -402,6 +416,7 @@ function SongPreview({ layout }: { layout: MaterialVisualLayout }) {
   return (
     <div className="rounded-[34px] bg-gradient-to-b from-lilac/45 via-white to-cream p-6">
       <div className="rounded-[28px] bg-white/88 p-5 text-center">
+        <PosterStickers />
         <p className="text-xs font-bold uppercase tracking-[0.2em] text-sage">
           Song And Movement
         </p>
@@ -451,6 +466,7 @@ function CanvaPromptPreview({ layout }: { layout: MaterialVisualLayout }) {
           title="Sample visual direction"
           helper="This gives the teacher a clearer layout before moving into Canva."
         />
+        <BuddyStrip />
 
         <div className="mt-5 grid gap-4 lg:grid-cols-[1fr_0.9fr]">
           <div className="grid gap-4 sm:grid-cols-2">
@@ -517,6 +533,66 @@ function SectionBanner({
   );
 }
 
+function CuteHeroPanel({
+  title,
+  subtitle
+}: {
+  title: string;
+  subtitle: string;
+}) {
+  return (
+    <div className="relative overflow-hidden rounded-[32px] bg-gradient-to-r from-[#dff4ff] via-[#fff7cf] to-[#ffe1ea] p-5">
+      <div className="absolute -left-2 top-4 h-16 w-16 rounded-full bg-white/45 blur-2xl" />
+      <div className="absolute right-5 top-3 flex gap-2 text-2xl">
+        <span>🇲🇾</span>
+        <span>⭐</span>
+        <span>🎈</span>
+      </div>
+      <div className="relative max-w-[34rem]">
+        <p className="inline-flex rounded-full bg-white/80 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-sage">
+          EIP Friendly
+        </p>
+        <h3 className="mt-3 font-display text-[1.9rem] font-bold leading-none text-ink sm:text-[2.2rem]">
+          {title}
+        </h3>
+        <p className="mt-3 text-sm leading-7 text-ink/72">{subtitle}</p>
+      </div>
+    </div>
+  );
+}
+
+function BuddyStrip() {
+  return (
+    <div className="mt-4 flex flex-wrap gap-3">
+      {[
+        ["👧", "Say it"],
+        ["🧒", "Point to it"],
+        ["⭐", "Try again"],
+        ["🎵", "Clap together"]
+      ].map(([emoji, label]) => (
+        <div
+          key={label}
+          className="inline-flex items-center gap-2 rounded-full bg-white/84 px-3 py-2 text-xs font-semibold text-ink/72 shadow-sm"
+        >
+          <span className="text-lg">{emoji}</span>
+          <span>{label}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function MiniWordChip({ card }: { card: MaterialVisualCard }) {
+  return (
+    <div className="rounded-[22px] bg-white/88 px-3 py-3 text-center shadow-sm">
+      <div className="text-2xl">{card.emoji}</div>
+      <p className="mt-2 font-display text-lg font-bold uppercase leading-none text-ink">
+        {card.title}
+      </p>
+    </div>
+  );
+}
+
 function TeachingCard({
   card,
   index
@@ -536,7 +612,7 @@ function TeachingCard({
           Focus Card
         </div>
       </div>
-      <p className="mt-4 font-display text-[2rem] font-bold uppercase leading-none text-ink">
+      <p className="mt-4 break-words font-display text-[1.6rem] font-bold uppercase leading-[0.95] tracking-tight text-ink sm:text-[1.8rem]">
         {card.title}
       </p>
       {card.subtitle ? (
@@ -575,6 +651,18 @@ function ActivityPanel({
           </p>
         ))}
       </div>
+    </div>
+  );
+}
+
+function PosterStickers() {
+  return (
+    <div className="mb-4 flex items-center justify-center gap-3 text-2xl">
+      <span className="rounded-full bg-[#ffe8a3] px-3 py-1 shadow-sm">☁️</span>
+      <span className="rounded-full bg-[#ffd7e3] px-3 py-1 shadow-sm">🌈</span>
+      <span className="rounded-full bg-[#dff4ff] px-3 py-1 shadow-sm">⭐</span>
+      <span className="rounded-full bg-[#e7f8d8] px-3 py-1 shadow-sm">🧒</span>
+      <span className="rounded-full bg-[#fff2c9] px-3 py-1 shadow-sm">👧</span>
     </div>
   );
 }

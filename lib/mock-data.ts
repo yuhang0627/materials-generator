@@ -80,7 +80,8 @@ export const formDefaults = {
   subject: "Language and communication",
   skillFocus: "Words ending with -ing",
   studentLevel: "Early primary",
-  outputType: "Word list",
+  materialType: "Classroom Poster",
+  outputType: "Classroom Poster",
   language: "English",
   numberOfItems: "6",
   difficulty: "Gentle",
@@ -94,7 +95,8 @@ export const blankFormDefaults = {
   subject: "",
   skillFocus: "",
   studentLevel: "",
-  outputType: "Word list",
+  materialType: "Worksheet",
+  outputType: "Worksheet",
   language: "English",
   numberOfItems: "6",
   difficulty: "Gentle",
@@ -104,9 +106,10 @@ export const blankFormDefaults = {
 
 export const historyFilters = [
   "All",
-  "Word list",
+  "Classroom Poster",
   "Worksheet",
   "Visual cards",
   "Behaviour worksheet",
-  "Song or chant"
+  "Song Poster",
+  "Teaching Plan"
 ];

@@ -5,6 +5,7 @@ export type MaterialFormValues = {
   subject: string;
   skillFocus: string;
   studentLevel: string;
+  materialType: string;
   outputType: string;
   language: string;
   numberOfItems: string;
@@ -49,6 +50,12 @@ export type MaterialVisualLayout = {
     | "poster"
     | "social-story"
     | "behaviour-worksheet"
+    | "matching-activity"
+    | "cut-paste"
+    | "colouring-sheet"
+    | "routine-chart"
+    | "behaviour-chart"
+    | "reward-chart"
     | "song-chant"
     | "canva-prompt";
   title: string;
@@ -237,44 +244,88 @@ function buildCanvaPrompt(form: MaterialFormValues, wordList: string[]) {
   return [
     "Create a calm pastel classroom resource for an Early Intervention Program teacher.",
     `Theme: ${form.theme}. Subject: ${form.subject}. Skill focus: ${form.skillFocus}.`,
-    `Output type: ${form.outputType}. Student level: ${form.studentLevel}. Difficulty: ${form.difficulty}.`,
+    `Material type: ${form.materialType}. Output type: ${form.outputType}. Student level: ${form.studentLevel}. Difficulty: ${form.difficulty}.`,
     `Include these focus words: ${wordList.join(", ")}.`,
     "Use simple icons, large readable text, soft cream, mint, blush, and sage colours, with lots of spacing and visual clarity."
   ].join(" ");
 }
 
+function detectLayoutKind(form: MaterialFormValues): MaterialVisualLayout["kind"] {
+  const value = `${form.materialType || form.outputType}`.toLowerCase();
+
+  if (value.includes("flashcard")) return "visual-cards";
+  if (value.includes("visual card")) return "visual-cards";
+  if (value.includes("classroom poster")) return "poster";
+  if (value.includes("poster")) return "poster";
+  if (value.includes("social story")) return "social-story";
+  if (value.includes("behaviour worksheet")) return "behaviour-worksheet";
+  if (value.includes("matching")) return "matching-activity";
+  if (value.includes("cut and paste")) return "cut-paste";
+  if (value.includes("colouring")) return "colouring-sheet";
+  if (value.includes("routine")) return "routine-chart";
+  if (value.includes("behaviour chart")) return "behaviour-chart";
+  if (value.includes("reward chart")) return "reward-chart";
+  if (value.includes("song")) return "song-chant";
+  if (value.includes("worksheet")) return "worksheet";
+  if (value.includes("canva")) return "canva-prompt";
+  return "word-list";
+}
+
 export function generateMaterial(form: MaterialFormValues): GeneratedMaterial {
   const count = clampItemCount(form.numberOfItems);
   const wordList = buildWordList(form, count);
+  const layoutKind = detectLayoutKind(form);
+  const sentences = buildSentences(wordList, form);
+  const worksheetActivity = buildWorksheetActivity(wordList, form);
+  const teacherNotes = buildTeacherNotes(form, wordList);
 
   return {
     id: slugId(),
-    title: `${titleCase(form.theme || "Classroom")} ${form.outputType}`,
+    title: `${titleCase(form.theme || "Classroom")} ${form.materialType || form.outputType}`,
     createdAt: formatNow(),
     form,
     wordList,
-    sentences: buildSentences(wordList, form),
-    worksheetActivity: buildWorksheetActivity(wordList, form),
+    sentences,
+    worksheetActivity,
     visualCardText: buildVisualCards(wordList, form),
     canvaPrompt: buildCanvaPrompt(form, wordList),
-    teacherNotes: buildTeacherNotes(form, wordList),
+    teacherNotes,
     suggestedDifficultyAdjustment:
       "If the child needs more support, use 3 words first with picture choices. If the child is ready for a challenge, ask for one extra sentence using a target word.",
-    summary: `Created ${count} ${form.skillFocus || "target"} items for ${form.studentLevel || "early learners"} in a ${form.difficulty.toLowerCase()} ${form.outputType.toLowerCase()} set around ${form.theme || "the chosen theme"}.`,
+    summary: `Created ${count} ${form.skillFocus || "target"} items for ${form.studentLevel || "early learners"} in a ${form.difficulty.toLowerCase()} ${(form.materialType || form.outputType).toLowerCase()} set around ${form.theme || "the chosen theme"}.`,
     visualLayout: {
-      kind: "word-list",
-      title: `${titleCase(form.theme || "Classroom")} ${form.outputType}`,
+      kind: layoutKind,
+      title: `${titleCase(form.theme || "Classroom")} ${form.materialType || form.outputType}`,
       subtitle: form.subject || form.skillFocus || "Teaching material",
-      instructions: "Say each word, point to the picture, and read the sentence.",
+      instructions:
+        layoutKind === "poster"
+          ? "Display this poster at eye level and point to each key word together."
+          : layoutKind === "worksheet"
+            ? "Circle, match, write, or colour using one short direction at a time."
+            : "Say each word, point to the picture, and read the sentence.",
       cards: wordList.map((word, index) => ({
         emoji: emojiForWord(word, form.theme),
         title: titleCase(word),
-        subtitle: sentenceForWord(word, buildSentences(wordList, form)[index])
+        subtitle: sentenceForWord(word, sentences[index]),
+        body:
+          layoutKind === "visual-cards"
+            ? `Phonics cue: ${word.slice(-3).toUpperCase()}`
+            : undefined
       })),
       sections: [
         {
-          heading: "Teacher Notes",
-          lines: buildTeacherNotes(form, wordList)
+          heading:
+            layoutKind === "worksheet"
+              ? "Activities"
+              : layoutKind === "poster"
+                ? "Content Blocks"
+                : "Teacher Notes",
+          lines:
+            layoutKind === "worksheet"
+              ? worksheetActivity
+              : layoutKind === "poster"
+                ? sentences
+                : teacherNotes
         }
       ]
     }
@@ -324,8 +375,12 @@ export function toMaterialInsert(material: GeneratedMaterial): MaterialInsert {
     output_type: normalized.form.outputType,
     language: normalized.form.language,
     difficulty: normalized.form.difficulty,
-    input_data: normalized.form,
+    input_data: {
+      ...normalized.form,
+      resourceKind: "material"
+    },
     generated_content: {
+      resourceKind: "material",
       title: normalized.title,
       createdAt: normalized.createdAt,
       summary: normalized.summary,
@@ -336,7 +391,8 @@ export function toMaterialInsert(material: GeneratedMaterial): MaterialInsert {
       canvaPrompt: normalized.canvaPrompt,
       teacherNotes: normalized.teacherNotes,
       suggestedDifficultyAdjustment: normalized.suggestedDifficultyAdjustment,
-      visualLayout: normalized.visualLayout
+      visualLayout: normalized.visualLayout,
+      isFavorite: false
     }
   };
 }
@@ -364,6 +420,12 @@ export function normalizeGeneratedMaterial(material: unknown): GeneratedMaterial
       skillFocus: typeof form.skillFocus === "string" ? form.skillFocus : "",
       studentLevel:
         typeof form.studentLevel === "string" ? form.studentLevel : "",
+      materialType:
+        typeof form.materialType === "string"
+          ? form.materialType
+          : typeof form.outputType === "string"
+            ? form.outputType
+            : "Worksheet",
       outputType: typeof form.outputType === "string" ? form.outputType : "Word list",
       language: typeof form.language === "string" ? form.language : "English",
       numberOfItems:
@@ -437,6 +499,8 @@ export function fromMaterialRow(row: MaterialRow): GeneratedMaterial {
       subject: row.subject,
       skillFocus: row.skill_focus,
       studentLevel: row.student_level,
+      materialType:
+        typeof input.materialType === "string" ? input.materialType : row.output_type,
       outputType: row.output_type,
       language: row.language,
       numberOfItems:
@@ -506,16 +570,34 @@ function normalizeVisualLayout(
     existing.kind ||
     (outputType === "worksheet"
       ? "worksheet"
+      : outputType === "flashcards"
+        ? "visual-cards"
       : outputType === "visual cards"
         ? "visual-cards"
+        : outputType === "classroom poster"
+          ? "poster"
         : outputType === "poster content"
           ? "poster"
-          : outputType === "social story"
-            ? "social-story"
-            : outputType === "behaviour worksheet"
-              ? "behaviour-worksheet"
+        : outputType === "social story"
+          ? "social-story"
+        : outputType === "behaviour worksheet"
+          ? "behaviour-worksheet"
+          : outputType === "matching activity"
+            ? "matching-activity"
+            : outputType === "cut and paste activity"
+              ? "cut-paste"
+              : outputType === "colouring sheet"
+                ? "colouring-sheet"
+                : outputType === "routine chart"
+                  ? "routine-chart"
+                  : outputType === "behaviour chart"
+                    ? "behaviour-chart"
+                    : outputType === "reward chart"
+                      ? "reward-chart"
               : outputType === "song or chant"
                 ? "song-chant"
+                : outputType === "song poster"
+                  ? "song-chant"
                 : outputType === "canva prompt"
                   ? "canva-prompt"
                   : "word-list");
@@ -646,6 +728,62 @@ function normalizeVisualLayout(
                   : ["Circle the correct word.", "Write one simple answer."]
             }
           ]
+        : kind === "matching-activity"
+          ? [
+              {
+                heading: "Match It",
+                lines: [
+                  "Match the picture to the word.",
+                  "Point to the same ending sound.",
+                  "Say the word after matching."
+                ]
+              }
+            ]
+          : kind === "cut-paste"
+            ? [
+                {
+                  heading: "Cut And Paste",
+                  lines: [
+                    "Cut out the cards.",
+                    "Paste them under the correct heading.",
+                    "Say each word after pasting."
+                  ]
+                }
+              ]
+            : kind === "colouring-sheet"
+              ? [
+                  {
+                    heading: "Colour And Talk",
+                    lines: [
+                      "Colour the big picture.",
+                      "Point to the target word.",
+                      "Say one short sentence."
+                    ]
+                  }
+                ]
+              : kind === "routine-chart"
+                ? [
+                    {
+                      heading: "Routine Steps",
+                      lines: fallback.wordList.length > 0
+                        ? fallback.wordList.slice(0, 6).map((word) => titleCase(word))
+                        : ["Wash Hands", "Snack Time", "Reading", "Play Time", "Clean Up", "Home Time"]
+                    }
+                  ]
+                : kind === "behaviour-chart"
+                  ? [
+                      {
+                        heading: "Check In",
+                        lines: ["Expected behaviour", "How friends feel", "What to do next"]
+                      }
+                    ]
+                  : kind === "reward-chart"
+                    ? [
+                        {
+                          heading: "Reward Goals",
+                          lines: ["I try", "I wait", "I listen", "I finish"]
+                        }
+                      ]
         : kind === "poster"
           ? [
               {

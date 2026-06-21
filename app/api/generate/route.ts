@@ -16,6 +16,7 @@ function isValidForm(body: unknown): body is MaterialFormValues {
     "subject",
     "skillFocus",
     "studentLevel",
+    "materialType",
     "outputType",
     "language",
     "numberOfItems",

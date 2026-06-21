@@ -47,6 +47,18 @@ export const MaterialPreview = forwardRef<
           {layout.kind === "behaviour-worksheet" ? (
             <BehaviourWorksheetPreview layout={layout} />
           ) : null}
+          {layout.kind === "matching-activity" ? (
+            <MatchingActivityPreview layout={layout} />
+          ) : null}
+          {layout.kind === "cut-paste" ? <CutPastePreview layout={layout} /> : null}
+          {layout.kind === "colouring-sheet" ? (
+            <ColouringSheetPreview layout={layout} />
+          ) : null}
+          {layout.kind === "routine-chart" ? <RoutineChartPreview layout={layout} /> : null}
+          {layout.kind === "behaviour-chart" ? (
+            <BehaviourChartPreview layout={layout} />
+          ) : null}
+          {layout.kind === "reward-chart" ? <RewardChartPreview layout={layout} /> : null}
           {layout.kind === "song-chant" ? <SongPreview layout={layout} /> : null}
           {layout.kind === "canva-prompt" ? (
             <CanvaPromptPreview layout={layout} />
@@ -361,6 +373,197 @@ function BehaviourWorksheetPreview({ layout }: { layout: MaterialVisualLayout })
           </div>
         </div>
       ) : null}
+    </div>
+  );
+}
+
+function MatchingActivityPreview({ layout }: { layout: MaterialVisualLayout }) {
+  const cards = layout.cards.slice(0, 6);
+
+  return (
+    <div className="space-y-5">
+      <NameDateRow />
+      <Hint text={layout.instructions} />
+      <div className="rounded-[30px] bg-white/84 p-5">
+        <SectionBanner
+          eyebrow="Matching Activity"
+          title="Match the picture to the word"
+          helper="Use one-to-one pointing and simple sound cues."
+        />
+        <div className="mt-5 grid gap-4 md:grid-cols-2">
+          <div className="space-y-3">
+            {cards.map((card, index) => (
+              <MatchRow
+                key={`${card.title}-${index}`}
+                left={`${String.fromCharCode(65 + index)}. ${card.emoji}`}
+                right={card.title}
+              />
+            ))}
+          </div>
+          <div className="rounded-[24px] bg-gradient-to-b from-cream to-blush/30 p-5">
+            <p className="font-display text-2xl font-bold text-ink">Teacher Prompt</p>
+            <div className="mt-3 space-y-2">
+              <p className="text-sm leading-7 text-ink/75">Say the word slowly.</p>
+              <p className="text-sm leading-7 text-ink/75">Point to the matching card.</p>
+              <p className="text-sm leading-7 text-ink/75">Read the sentence together.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CutPastePreview({ layout }: { layout: MaterialVisualLayout }) {
+  return (
+    <div className="space-y-5">
+      <NameDateRow />
+      <Hint text={layout.instructions} />
+      <div className="rounded-[30px] bg-white/84 p-5">
+        <SectionBanner
+          eyebrow="Cut And Paste"
+          title="Cut, sort, and paste the cards"
+          helper="Print, cut, then paste each card in the correct space."
+        />
+        <div className="mt-5 grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
+          <div className="rounded-[24px] bg-mint/25 p-5">
+            <p className="font-display text-xl font-bold text-ink">Cut-Out Cards</p>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              {layout.cards.slice(0, 6).map((card, index) => (
+                <MiniWordChip key={`${card.title}-${index}`} card={card} />
+              ))}
+            </div>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {["Paste Here", "Paste Here", "Paste Here", "Paste Here"].map((label, index) => (
+              <div
+                key={`${label}-${index}`}
+                className="rounded-[24px] border-2 border-dashed border-sage/30 bg-cream/45 p-5"
+              >
+                <p className="text-sm font-bold uppercase tracking-[0.16em] text-sage">
+                  {label}
+                </p>
+                <div className="mt-4 h-24 rounded-[18px] bg-white/70" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ColouringSheetPreview({ layout }: { layout: MaterialVisualLayout }) {
+  return (
+    <div className="space-y-5">
+      <NameDateRow />
+      <Hint text={layout.instructions} />
+      <div className="rounded-[30px] bg-gradient-to-b from-white to-cream p-5">
+        <SectionBanner
+          eyebrow="Colouring Sheet"
+          title="Colour, point, and say"
+          helper="Use this as a calm visual task with talking prompts."
+        />
+        <div className="mt-5 rounded-[28px] border-2 border-dashed border-sage/30 bg-white/72 p-6">
+          <div className="grid gap-4 md:grid-cols-3">
+            {layout.cards.slice(0, 3).map((card, index) => (
+              <div
+                key={`${card.title}-${index}`}
+                className="rounded-[22px] border border-sage/20 bg-cream/35 p-4 text-center"
+              >
+                <div className="text-5xl grayscale">{card.emoji}</div>
+                <p className="mt-3 font-display text-2xl font-bold text-ink">{card.title}</p>
+                <div className="mt-4 h-24 rounded-[18px] border border-dashed border-sage/25 bg-white/70" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RoutineChartPreview({ layout }: { layout: MaterialVisualLayout }) {
+  const steps =
+    layout.sections[0]?.lines.length > 0
+      ? layout.sections[0].lines
+      : layout.cards.slice(0, 6).map((card) => card.title);
+
+  return (
+    <div className="space-y-5">
+      <Hint text={layout.instructions} />
+      <div className="rounded-[30px] bg-gradient-to-b from-mint/25 via-white to-cream p-5">
+        <SectionBanner
+          eyebrow="Routine Chart"
+          title="Our classroom routine"
+          helper="Display each step in order and point before transitions."
+        />
+        <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {steps.slice(0, 6).map((step, index) => (
+            <div
+              key={`${step}-${index}`}
+              className="rounded-[24px] bg-white/88 p-4 text-center"
+            >
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-sage text-lg font-bold text-white">
+                {index + 1}
+              </div>
+              <p className="mt-3 font-display text-2xl font-bold text-ink">{step}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BehaviourChartPreview({ layout }: { layout: MaterialVisualLayout }) {
+  const prompts = layout.sections[0]?.lines ?? ["Expected behaviour", "How friends feel", "What to do next"];
+
+  return (
+    <div className="space-y-5">
+      <Hint text={layout.instructions} />
+      <div className="grid gap-4 md:grid-cols-3">
+        {prompts.map((prompt, index) => (
+          <ReflectionBox
+            key={`${prompt}-${index}`}
+            title={index === 0 ? "Expected" : index === 1 ? "Feelings" : "Next Step"}
+            text={prompt}
+            tone={accentBackgrounds[index % accentBackgrounds.length]}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function RewardChartPreview({ layout }: { layout: MaterialVisualLayout }) {
+  return (
+    <div className="space-y-5">
+      <Hint text={layout.instructions} />
+      <div className="rounded-[30px] bg-gradient-to-b from-blush/25 via-white to-cream p-5">
+        <SectionBanner
+          eyebrow="Reward Chart"
+          title="I can earn my stars"
+          helper="Use sticker spaces or stamps after each successful step."
+        />
+        <div className="mt-5 grid gap-4 sm:grid-cols-2">
+          {["I try", "I wait", "I listen", "I finish"].map((goal, index) => (
+            <div key={`${goal}-${index}`} className="rounded-[24px] bg-white/88 p-4">
+              <p className="font-display text-2xl font-bold text-ink">{goal}</p>
+              <div className="mt-4 flex gap-2">
+                {Array.from({ length: 5 }, (_, starIndex) => (
+                  <div
+                    key={`${goal}-${starIndex}`}
+                    className="flex h-10 w-10 items-center justify-center rounded-full bg-cream text-xl"
+                  >
+                    ⭐
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

@@ -4,6 +4,9 @@ import { ReactNode } from "react";
 const navItems = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/materials/create", label: "Create Material" },
+  { href: "/plans/create", label: "Teaching Plan Generator" },
+  { href: "/ideas", label: "Search Mode" },
+  { href: "/library", label: "Resource Library" },
   { href: "/materials/result", label: "Generated Result" },
   { href: "/history", label: "History" }
 ];

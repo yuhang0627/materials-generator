@@ -79,7 +79,8 @@ export default async function DashboardPage() {
 
           <div className="mt-6 flex flex-wrap gap-3">
             <PrimaryLink href="/materials/create">Create New Material</PrimaryLink>
-            <SecondaryLink href="/history">Open History</SecondaryLink>
+            <SecondaryLink href="/plans/create">Open Teaching Plans</SecondaryLink>
+            <SecondaryLink href="/library">Open Resource Library</SecondaryLink>
           </div>
         </Surface>
 
@@ -175,10 +176,10 @@ export default async function DashboardPage() {
           </div>
 
           <Link
-            href="/materials/result"
+            href="/library"
             className="mt-5 inline-flex text-sm font-bold text-sage"
           >
-            View sample generated result
+            View saved resources
           </Link>
         </Surface>
       </div>

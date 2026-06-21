@@ -14,17 +14,7 @@ import {
 } from "@/lib/material-generator";
 import { blankFormDefaults, formDefaults } from "@/lib/mock-data";
 import { SignOutButton } from "@/components/sign-out-button";
-
-const outputTypes = [
-  "Word list",
-  "Worksheet",
-  "Visual cards",
-  "Poster content",
-  "Social story",
-  "Behaviour worksheet",
-  "Song or chant",
-  "Canva prompt"
-];
+import { materialTypeOptions } from "@/lib/resource-options";
 
 const selectClassName =
   "w-full appearance-none border-0 bg-transparent text-ink outline-none";
@@ -131,13 +121,16 @@ export function CreateMaterialClient({ userEmail }: { userEmail: string }) {
                 className={selectClassName}
               />
             </Field>
-            <Field label="Output type">
+            <Field label="Material type">
               <select
-                value={form.outputType}
-                onChange={(event) => updateField("outputType", event.target.value)}
+                value={form.materialType}
+                onChange={(event) => {
+                  updateField("materialType", event.target.value);
+                  updateField("outputType", event.target.value);
+                }}
                 className={selectClassName}
               >
-                {outputTypes.map((type) => (
+                {materialTypeOptions.map((type) => (
                   <option key={type}>{type}</option>
                 ))}
               </select>
@@ -239,13 +232,13 @@ export function CreateMaterialClient({ userEmail }: { userEmail: string }) {
         <div className="space-y-5">
           <Surface className="animate-fade-up stagger-1">
             <SectionTitle
-              eyebrow="Output Types"
-              title="Available formats"
-              description="Choose the main material type, then the generator will still build supporting text the teacher can reuse."
+              eyebrow="Material Types"
+              title="Available classroom-ready formats"
+              description="Each material type will shape the preview differently so the output feels closer to a printable teaching resource."
             />
 
             <div className="flex flex-wrap gap-2">
-              {outputTypes.map((type) => (
+              {materialTypeOptions.map((type) => (
                 <span
                   key={type}
                   className="rounded-full bg-cream px-3 py-2 text-sm font-semibold text-ink/75"
@@ -266,7 +259,7 @@ export function CreateMaterialClient({ userEmail }: { userEmail: string }) {
             <div className="rounded-[26px] bg-gradient-to-br from-white to-blush/55 p-5">
               <p className="text-sm leading-7 text-ink/80">
                 Create <strong>{form.numberOfItems || "6"}</strong>{" "}
-                <strong>{form.outputType.toLowerCase()}</strong> for{" "}
+                <strong>{(form.materialType || form.outputType).toLowerCase()}</strong> for{" "}
                 <strong>{form.subject || "language activities"}</strong> around{" "}
                 <strong>{form.theme || "the selected theme"}</strong>, focused on{" "}
                 <strong>{form.skillFocus || "the selected skill"}</strong> for{" "}

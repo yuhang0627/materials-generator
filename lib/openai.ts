@@ -43,6 +43,7 @@ function buildPrompt(form: MaterialFormValues) {
     `Subject: ${form.subject}`,
     `Skill focus: ${form.skillFocus}`,
     `Student level: ${form.studentLevel}`,
+    `Material type: ${form.materialType}`,
     `Output type: ${form.outputType}`,
     `Language: ${form.language}`,
     `Number of items: ${form.numberOfItems}`,
@@ -67,7 +68,7 @@ function buildPrompt(form: MaterialFormValues) {
     "- simpleSentences should be short and easy to model aloud.",
     "- worksheetActivity should be a few simple steps or questions only.",
     "- visualCardContent should be short card text, one item per array entry.",
-    "- canvaDesignPrompt should describe a calm pastel classroom resource.",
+    "- canvaDesignPrompt should describe a classroom-ready educational resource with clear visual hierarchy.",
     "- teacherNotes should be practical and brief.",
     "- suggestedDifficultyAdjustment should include both easier and harder ideas in one short paragraph."
   ].join("\n");

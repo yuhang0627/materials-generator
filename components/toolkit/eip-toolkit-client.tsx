@@ -175,7 +175,7 @@ export function EipToolkitClient({ userEmail }: { userEmail: string }) {
       userEmail={userEmail}
       headerAction={<SignOutButton />}
     >
-      <div className="grid gap-5 xl:grid-cols-[0.82fr_1.18fr]">
+      <div className="space-y-5">
         <Surface className="animate-fade-up">
           <SectionTitle
             eyebrow="Toolkit Builder"

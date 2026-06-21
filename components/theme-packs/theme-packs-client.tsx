@@ -188,7 +188,7 @@ export function ThemePacksClient({ userEmail }: { userEmail: string }) {
       userEmail={userEmail}
       headerAction={<SignOutButton />}
     >
-      <div className="grid gap-5 xl:grid-cols-[0.86fr_1.14fr]">
+      <div className="space-y-5">
         <Surface className="animate-fade-up">
           <SectionTitle
             eyebrow="Bundle Builder"

@@ -78,7 +78,7 @@ export function CreateMaterialClient({ userEmail }: { userEmail: string }) {
       userEmail={userEmail}
       headerAction={<SignOutButton />}
     >
-      <div className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
+      <div className="space-y-5">
         <Surface className="animate-fade-up">
           <SectionTitle
             eyebrow="Material Builder"

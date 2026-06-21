@@ -182,7 +182,7 @@ export function ThemePlannerClient({ userEmail }: { userEmail: string }) {
       userEmail={userEmail}
       headerAction={<SignOutButton />}
     >
-      <div className="grid gap-5 xl:grid-cols-[0.88fr_1.12fr]">
+      <div className="space-y-5">
         <Surface className="animate-fade-up">
           <SectionTitle
             eyebrow="Planner Inputs"

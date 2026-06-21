@@ -248,7 +248,7 @@ export function GeneratedResultClient({ userEmail }: { userEmail: string }) {
           </div>
         </Surface>
 
-        <div className="grid gap-5 xl:grid-cols-[0.72fr_1.28fr]">
+        <div className="space-y-5">
           <Surface className="animate-fade-up stagger-2">
             <SectionTitle
               eyebrow="Actions"

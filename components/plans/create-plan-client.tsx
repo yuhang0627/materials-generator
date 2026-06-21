@@ -90,7 +90,7 @@ export function CreatePlanClient({ userEmail }: { userEmail: string }) {
       userEmail={userEmail}
       headerAction={<SignOutButton />}
     >
-      <div className="grid gap-5 xl:grid-cols-[0.95fr_1.05fr]">
+      <div className="space-y-5">
         <Surface className="animate-fade-up">
           <SectionTitle
             eyebrow="Plan Builder"

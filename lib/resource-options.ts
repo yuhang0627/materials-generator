@@ -1,3 +1,5 @@
+export { studentLevelOptions } from "@/lib/student-level-engine";
+
 export const materialTypeOptions = [
   "Worksheet",
   "Flashcards",

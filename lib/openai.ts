@@ -4,6 +4,7 @@ import type {
   MaterialFormValues
 } from "@/lib/material-generator";
 import { normalizeGeneratedMaterial } from "@/lib/material-generator";
+import { getStudentLevelProfile } from "@/lib/student-level-engine";
 
 type AIContentShape = {
   wordList: string[];
@@ -29,6 +30,8 @@ function titleCase(text: string) {
 }
 
 function buildPrompt(form: MaterialFormValues) {
+  const level = getStudentLevelProfile(form.studentLevel);
+
   return [
     "You create teaching materials for an Early Intervention Program teacher.",
     "Return only valid JSON.",
@@ -42,7 +45,13 @@ function buildPrompt(form: MaterialFormValues) {
     `Theme: ${form.theme}`,
     `Subject: ${form.subject}`,
     `Skill focus: ${form.skillFocus}`,
-    `Student level: ${form.studentLevel}`,
+    `Student level: ${level.label}`,
+    `Student level profile: ${level.learnerSnapshot}`,
+    `Vocabulary guidance: ${level.vocabularyGuidance}`,
+    `Sentence guidance: ${level.sentenceGuidance}`,
+    `Activity guidance: ${level.activityGuidance}`,
+    `Teacher script guidance: ${level.teacherScriptGuidance}`,
+    `Printable guidance: ${level.printableGuidance}`,
     `Material type: ${form.materialType}`,
     `Output type: ${form.outputType}`,
     `Language: ${form.language}`,
@@ -70,7 +79,8 @@ function buildPrompt(form: MaterialFormValues) {
     "- visualCardContent should be short card text, one item per array entry.",
     "- canvaDesignPrompt should describe a classroom-ready educational resource with clear visual hierarchy.",
     "- teacherNotes should be practical and brief.",
-    "- suggestedDifficultyAdjustment should include both easier and harder ideas in one short paragraph."
+    "- suggestedDifficultyAdjustment should include both easier and harder ideas in one short paragraph.",
+    "- clearly adapt vocabulary difficulty, sentence length, teacher scripts, printable design, and activity complexity to the student level."
   ].join("\n");
 }
 

@@ -1,4 +1,8 @@
 import type { MaterialInsert, MaterialRow } from "@/lib/supabase/types";
+import {
+  getStudentLevelProfile,
+  normalizeStudentLevel
+} from "@/lib/student-level-engine";
 
 export type MaterialFormValues = {
   theme: string;
@@ -205,6 +209,16 @@ function buildWordList(form: MaterialFormValues, count: number) {
 }
 
 function buildSentences(wordList: string[], form: MaterialFormValues) {
+  const level = getStudentLevelProfile(form.studentLevel);
+
+  if (level.level === "Level 1") {
+    return wordList.slice(0, 4).map((word) => `${titleCase(word)}.`);
+  }
+
+  if (level.level === "Level 1.5") {
+    return wordList.slice(0, 4).map((word) => `${titleCase(word)} together.`);
+  }
+
   return wordList.slice(0, 4).map((word, index) => {
     const starters = [
       `I can see ${word}.`,
@@ -218,6 +232,33 @@ function buildSentences(wordList: string[], form: MaterialFormValues) {
 }
 
 function buildWorksheetActivity(wordList: string[], form: MaterialFormValues) {
+  const level = getStudentLevelProfile(form.studentLevel);
+
+  if (level.level === "Level 1") {
+    return [
+      `Look at the picture for ${wordList[0] ?? "the theme"}.`,
+      `Point to ${wordList[0] ?? "the word"}.`,
+      `Say ${wordList[0] ?? "the word"} together.`
+    ];
+  }
+
+  if (level.level === "Level 1.5") {
+    return [
+      `Match the picture to these words: ${wordList.slice(0, 2).join(", ")}.`,
+      `Point and say: ${wordList[0] ?? "theme word"}.`,
+      `Trace one word: ${wordList[1] ?? wordList[0] ?? "practice"}.`
+    ];
+  }
+
+  if (level.level === "Level 3") {
+    return [
+      `Read the focus words: ${wordList.slice(0, 4).join(", ")}.`,
+      `Write one short sentence using ${wordList[0] ?? "a focus word"}.`,
+      `Sort the words by picture, action, or place.`,
+      `Complete the sentence: "We use ${wordList[1] ?? "the theme word"} during ${form.theme}."`
+    ];
+  }
+
   return [
     `Circle the ${Math.min(3, wordList.length)} words that match the theme "${form.theme}".`,
     `Trace these words: ${wordList.slice(0, 3).join(", ")}.`,
@@ -233,18 +274,24 @@ function buildVisualCards(wordList: string[], form: MaterialFormValues) {
 }
 
 function buildTeacherNotes(form: MaterialFormValues, wordList: string[]) {
+  const level = getStudentLevelProfile(form.studentLevel);
+
   return [
-    "Keep instructions short and model each word aloud before independent work.",
-    `Use ${form.difficulty.toLowerCase()} pacing with gesture or picture support for ${form.studentLevel.toLowerCase()} learners.`,
+    `${level.label}: ${level.learnerSnapshot}`,
+    level.teacherScriptGuidance,
+    `Use ${form.difficulty.toLowerCase()} pacing with gesture or picture support for ${level.label.toLowerCase()} learners.`,
     `Start with ${wordList.slice(0, 2).join(" and ")}, then add the remaining words after a quick success.`
   ];
 }
 
 function buildCanvaPrompt(form: MaterialFormValues, wordList: string[]) {
+  const level = getStudentLevelProfile(form.studentLevel);
+
   return [
     "Create a calm pastel classroom resource for an Early Intervention Program teacher.",
     `Theme: ${form.theme}. Subject: ${form.subject}. Skill focus: ${form.skillFocus}.`,
-    `Material type: ${form.materialType}. Output type: ${form.outputType}. Student level: ${form.studentLevel}. Difficulty: ${form.difficulty}.`,
+    `Material type: ${form.materialType}. Output type: ${form.outputType}. Student level: ${level.label}. Difficulty: ${form.difficulty}.`,
+    `Student level guidance: ${level.vocabularyGuidance} ${level.sentenceGuidance} ${level.printableGuidance}`,
     `Include these focus words: ${wordList.join(", ")}.`,
     "Use simple icons, large readable text, soft cream, mint, blush, and sage colours, with lots of spacing and visual clarity."
   ].join(" ");
@@ -275,6 +322,7 @@ export function generateMaterial(form: MaterialFormValues): GeneratedMaterial {
   const count = clampItemCount(form.numberOfItems);
   const wordList = buildWordList(form, count);
   const layoutKind = detectLayoutKind(form);
+  const level = getStudentLevelProfile(form.studentLevel);
   const sentences = buildSentences(wordList, form);
   const worksheetActivity = buildWorksheetActivity(wordList, form);
   const teacherNotes = buildTeacherNotes(form, wordList);
@@ -291,25 +339,29 @@ export function generateMaterial(form: MaterialFormValues): GeneratedMaterial {
     canvaPrompt: buildCanvaPrompt(form, wordList),
     teacherNotes,
     suggestedDifficultyAdjustment:
-      "If the child needs more support, use 3 words first with picture choices. If the child is ready for a challenge, ask for one extra sentence using a target word.",
-    summary: `Created ${count} ${form.skillFocus || "target"} items for ${form.studentLevel || "early learners"} in a ${form.difficulty.toLowerCase()} ${(form.materialType || form.outputType).toLowerCase()} set around ${form.theme || "the chosen theme"}.`,
+      level.level === "Level 1" || level.level === "Level 1.5"
+        ? "If the child needs more support, reduce to 2 or 3 words with large pictures. If the child is ready for more, add one matching or pointing step."
+        : level.level === "Level 3"
+          ? "If the child needs more support, shorten the worksheet and model one example first. If the child is ready for more, add one independent sentence or sorting task."
+          : "If the child needs more support, use 3 words first with picture choices. If the child is ready for a challenge, ask for one extra sentence using a target word.",
+    summary: `Created ${count} ${form.skillFocus || "target"} items for ${level.label} in a ${form.difficulty.toLowerCase()} ${(form.materialType || form.outputType).toLowerCase()} set around ${form.theme || "the chosen theme"}.`,
     visualLayout: {
       kind: layoutKind,
       title: `${titleCase(form.theme || "Classroom")} ${form.materialType || form.outputType}`,
-      subtitle: form.subject || form.skillFocus || "Teaching material",
+      subtitle: `${level.label} • ${form.subject || form.skillFocus || "Teaching material"}`,
       instructions:
         layoutKind === "poster"
-          ? "Display this poster at eye level and point to each key word together."
+          ? `${level.printableGuidance} Display this poster at eye level and point to each key word together.`
           : layoutKind === "worksheet"
-            ? "Circle, match, write, or colour using one short direction at a time."
-            : "Say each word, point to the picture, and read the sentence.",
+            ? `${level.activityGuidance} Circle, match, write, or colour using one short direction at a time.`
+            : `${level.teacherScriptGuidance} Say each word, point to the picture, and read the sentence.`,
       cards: wordList.map((word, index) => ({
         emoji: emojiForWord(word, form.theme),
         title: titleCase(word),
         subtitle: sentenceForWord(word, sentences[index]),
         body:
           layoutKind === "visual-cards"
-            ? `Phonics cue: ${word.slice(-3).toUpperCase()}`
+            ? `${level.label} cue: ${word.slice(-3).toUpperCase()}`
             : undefined
       })),
       sections: [
@@ -419,7 +471,9 @@ export function normalizeGeneratedMaterial(material: unknown): GeneratedMaterial
       subject: typeof form.subject === "string" ? form.subject : "",
       skillFocus: typeof form.skillFocus === "string" ? form.skillFocus : "",
       studentLevel:
-        typeof form.studentLevel === "string" ? form.studentLevel : "",
+        typeof form.studentLevel === "string"
+          ? normalizeStudentLevel(form.studentLevel)
+          : "Level 1.5",
       materialType:
         typeof form.materialType === "string"
           ? form.materialType
@@ -498,7 +552,7 @@ export function fromMaterialRow(row: MaterialRow): GeneratedMaterial {
       theme: row.theme,
       subject: row.subject,
       skillFocus: row.skill_focus,
-      studentLevel: row.student_level,
+      studentLevel: normalizeStudentLevel(row.student_level),
       materialType:
         typeof input.materialType === "string" ? input.materialType : row.output_type,
       outputType: row.output_type,

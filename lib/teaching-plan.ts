@@ -1,8 +1,13 @@
 import type { MaterialInsert, MaterialRow } from "@/lib/supabase/types";
+import {
+  getStudentLevelProfile,
+  normalizeStudentLevel
+} from "@/lib/student-level-engine";
 
 export type TeachingPlanFormValues = {
   theme: string;
   ageGroup: string;
+  studentLevel: string;
   studentAbility: string;
   goal: string;
   duration: string;
@@ -95,6 +100,7 @@ export function generateTeachingPlan(
 ): GeneratedTeachingPlan {
   const titles = baseActivityTitles(form.theme);
   const durations = splitDuration(form.duration);
+  const level = getStudentLevelProfile(form.studentLevel);
 
   const activities: TeachingPlanActivity[] = titles.slice(0, 4).map((title, index) => ({
     title,
@@ -110,28 +116,50 @@ export function generateTeachingPlan(
     duration: durations[index] || "5 minutes",
     setup:
       index === 0
-        ? "Sit in a small circle with one clear visual item in the middle."
+        ? level.level === "Level 1"
+          ? "Sit in a very small circle with one large visual item in the middle."
+          : "Sit in a small circle with one clear visual item in the middle."
         : index === 1
-          ? "Stand with enough space to move and copy simple actions."
+          ? level.level === "Level 3"
+            ? "Stand with enough space to move, copy actions, and follow a short sequence."
+            : "Stand with enough space to move and copy simple actions."
           : index === 2
             ? "Place building or matching materials in the centre for shared access."
-            : "Prepare a simple table activity with one-step instructions.",
+            : level.level === "Level 2.5" || level.level === "Level 3"
+              ? "Prepare a short table task with two clear steps and a finished tray."
+              : "Prepare a simple table activity with one-step instructions.",
     teacherScript:
       index === 0
-        ? `"Let's pass it to our friend. My turn, your turn."`
+        ? level.level === "Level 1"
+          ? `"Look. Pass. My turn. Your turn."`
+          : `"Let's pass it to our friend. My turn, your turn."`
         : index === 1
-          ? `"Look at me. We move together. Ready, go."`
+          ? level.level === "Level 3"
+            ? `"Look at me first. Copy the actions, then try the next one by yourself."`
+            : `"Look at me. We move together. Ready, go."`
           : index === 2
-            ? `"Let's build together. You do one, I do one."`
-            : `"Let's finish together. First this, then all done."`,
+            ? level.level === "Level 2.5" || level.level === "Level 3"
+              ? `"Let's build together. You do one, then choose the next part."`
+              : `"Let's build together. You do one, I do one."`
+            : level.level === "Level 3"
+              ? `"Let's finish together. Read the task, do it, then check your work."`
+              : `"Let's finish together. First this, then all done."`,
     expectedStudentResponse: [
-      "Looks at the material or teacher.",
-      "Waits briefly for a turn with support.",
-      "Joins the activity with gesture, word, or action."
+      level.level === "Level 1"
+        ? "Looks at the material or teacher."
+        : "Looks at the material or teacher and follows the cue.",
+      level.level === "Level 3"
+        ? "Waits for a turn and responds with less support."
+        : "Waits briefly for a turn with support.",
+      level.level === "Level 1.5"
+        ? "Joins with gesture, action, or a two-word phrase."
+        : "Joins the activity with gesture, word, or action."
     ],
     adaptationIdeas: [
       "Use a smaller group and shorter turns for children who need more support.",
-      "Add a visual choice board or first-then card.",
+      level.level === "Level 2.5" || level.level === "Level 3"
+        ? "Add a short follow-up worksheet or independent check step."
+        : "Add a visual choice board or first-then card.",
       "Reduce language and model the action before asking."
     ],
     behaviourSupportStrategies: [
@@ -140,21 +168,33 @@ export function generateTeachingPlan(
       "Keep materials limited to reduce overload."
     ],
     transitionSuggestion:
-      "Sing a short transition line and show the next activity card.",
-    easyVersion: "Use hand-over-hand support or one-step imitation only.",
-    mediumVersion: "Encourage one independent action or one clear verbal response.",
-    advancedVersion: "Add peer interaction, longer wait time, or a second instruction."
+      level.level === "Level 1"
+        ? "Sing a short transition line and show one next-card only."
+        : "Sing a short transition line and show the next activity card.",
+    easyVersion:
+      level.level === "Level 1"
+        ? "Use hand-over-hand support or one-step imitation only."
+        : "Reduce language and return to one-step imitation with strong visual support.",
+    mediumVersion:
+      level.level === "Level 2.5" || level.level === "Level 3"
+        ? "Encourage one independent action plus one spoken response."
+        : "Encourage one independent action or one clear verbal response.",
+    advancedVersion:
+      level.level === "Level 3"
+        ? "Add peer interaction, longer routines, and a short written or sorting follow-up."
+        : "Add peer interaction, longer wait time, or a second instruction."
   }));
 
   return {
     id: planId(),
-    title: `${titleCase(form.theme || "Classroom")} Teaching Plan`,
+    title: `${titleCase(form.theme || "Classroom")} Teaching Plan • ${level.label}`,
     createdAt: formatNow(),
     form,
-    summary: `A ${form.duration.toLowerCase()} Early Intervention Program teaching plan focused on ${form.goal.toLowerCase()} for ${form.ageGroup.toLowerCase()} learners.`,
+    summary: `A ${form.duration.toLowerCase()} Early Intervention Program teaching plan focused on ${form.goal.toLowerCase()} for ${form.ageGroup.toLowerCase()} learners at ${level.label}.`,
     setupNotes: [
+      `Student level engine: ${level.learnerSnapshot}`,
       "Prepare visual cues before the session starts.",
-      "Keep language short and concrete.",
+      level.teacherScriptGuidance,
       "Alternate active and seated tasks to support regulation."
     ],
     activities
@@ -228,7 +268,7 @@ export function toTeachingPlanInsert(
     theme: plan.form.theme,
     subject: plan.form.goal,
     skill_focus: plan.form.studentAbility,
-    student_level: plan.form.ageGroup,
+    student_level: plan.form.studentLevel,
     output_type: "Teaching Plan",
     language: "English",
     difficulty: "Teacher Guided",
@@ -262,7 +302,11 @@ export function fromTeachingPlanRow(row: MaterialRow): GeneratedTeachingPlan {
     form: {
       theme: row.theme,
       ageGroup:
-        typeof input.ageGroup === "string" ? input.ageGroup : row.student_level,
+        typeof input.ageGroup === "string" ? input.ageGroup : "",
+      studentLevel:
+        typeof input.studentLevel === "string"
+          ? normalizeStudentLevel(input.studentLevel)
+          : normalizeStudentLevel(row.student_level),
       studentAbility:
         typeof input.studentAbility === "string" ? input.studentAbility : row.skill_focus,
       goal: typeof input.goal === "string" ? input.goal : row.subject,

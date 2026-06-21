@@ -16,11 +16,12 @@ import {
   type TeachingPlanFormValues
 } from "@/lib/teaching-plan";
 import { createClient } from "@/lib/supabase/client";
-import { teachingPlanGoalOptions } from "@/lib/resource-options";
+import { studentLevelOptions, teachingPlanGoalOptions } from "@/lib/resource-options";
 
 const defaultForm: TeachingPlanFormValues = {
   theme: "Malaysia National Day",
   ageGroup: "2-5",
+  studentLevel: "Level 1.5",
   studentAbility: "Mixed early support needs",
   goal: "Cohesive Play",
   duration: "30 minutes",
@@ -38,7 +39,7 @@ export function CreatePlanClient({ userEmail }: { userEmail: string }) {
   useEffect(() => {
     const draft = getDraftPlanForm();
     const current = getCurrentPlan();
-    if (draft) setForm(draft);
+    if (draft) setForm({ ...defaultForm, ...draft });
     if (current) setPlan(current);
   }, []);
 
@@ -120,6 +121,17 @@ export function CreatePlanClient({ userEmail }: { userEmail: string }) {
                 }
                 className="w-full border-0 bg-transparent text-ink outline-none"
               />
+            </Field>
+            <Field label="Student Level">
+              <select
+                value={form.studentLevel}
+                onChange={(event) => updateField("studentLevel", event.target.value)}
+                className="w-full border-0 bg-transparent text-ink outline-none"
+              >
+                {studentLevelOptions.map((level) => (
+                  <option key={level}>{level}</option>
+                ))}
+              </select>
             </Field>
             <Field label="Goal">
               <select
@@ -219,6 +231,9 @@ export function CreatePlanClient({ userEmail }: { userEmail: string }) {
 
           {plan ? (
             <div className="space-y-4">
+              <div className="rounded-[24px] bg-mint/30 px-4 py-3 text-sm font-semibold text-ink/75">
+                Student Level: {plan.form.studentLevel}
+              </div>
               {plan.activities.map((activity, index) => (
                 <div
                   key={`${activity.title}-${index}`}

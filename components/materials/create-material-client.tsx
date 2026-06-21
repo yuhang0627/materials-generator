@@ -14,7 +14,7 @@ import {
 } from "@/lib/material-generator";
 import { blankFormDefaults, formDefaults } from "@/lib/mock-data";
 import { SignOutButton } from "@/components/sign-out-button";
-import { materialTypeOptions } from "@/lib/resource-options";
+import { materialTypeOptions, studentLevelOptions } from "@/lib/resource-options";
 
 const selectClassName =
   "w-full appearance-none border-0 bg-transparent text-ink outline-none";
@@ -115,11 +115,15 @@ export function CreateMaterialClient({ userEmail }: { userEmail: string }) {
               />
             </Field>
             <Field label="Student level">
-              <input
+              <select
                 value={form.studentLevel}
                 onChange={(event) => updateField("studentLevel", event.target.value)}
                 className={selectClassName}
-              />
+              >
+                {studentLevelOptions.map((level) => (
+                  <option key={level}>{level}</option>
+                ))}
+              </select>
             </Field>
             <Field label="Material type">
               <select

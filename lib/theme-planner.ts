@@ -1,4 +1,8 @@
 import type { MaterialInsert, MaterialRow } from "@/lib/supabase/types";
+import {
+  getStudentLevelProfile,
+  normalizeStudentLevel
+} from "@/lib/student-level-engine";
 
 export type ThemePlannerFormValues = {
   theme: string;
@@ -94,16 +98,17 @@ export function generateThemePlan(
 ): GeneratedThemePlan {
   const goals = parseGoals(form.mainLearningGoals);
   const weekCount = getWeekCount(form.duration);
+  const level = getStudentLevelProfile(form.studentLevel);
   const weeklyPlan: ThemePlannerWeek[] = Array.from({ length: weekCount }, (_, index) =>
     buildWeekPlan(form, goals, index + 1, weekCount)
   );
 
   return {
     id: plannerId(),
-    title: `${titleCase(form.theme || "Classroom")} Theme Planner`,
+    title: `${titleCase(form.theme || "Classroom")} Theme Planner • ${level.label}`,
     createdAt: formatNow(),
     form,
-    summary: `${form.duration} roadmap for ${form.theme}, designed for ${form.ageGroup} learners at ${form.studentLevel}.`,
+    summary: `${form.duration} roadmap for ${form.theme}, designed for ${form.ageGroup} learners at ${level.label}.`,
     weeklyPlan
   };
 }
@@ -115,6 +120,7 @@ function buildWeekPlan(
   totalWeeks: number
 ): ThemePlannerWeek {
   const theme = form.theme || "Theme";
+  const level = getStudentLevelProfile(form.studentLevel);
   const baseWords =
     theme.toLowerCase().includes("malaysia") || theme.toLowerCase().includes("national")
       ? ["flag", "march", "sing", "tower", "friend", "play"]
@@ -127,10 +133,17 @@ function buildWeekPlan(
     weekLabel: `Week ${week}`,
     focusTitle: weekTitle(theme, week),
     learningGoals: rotatingGoals.slice(0, Math.min(3, rotatingGoals.length)),
-    vocabularyFocus: baseWords.slice(0, 4),
+    vocabularyFocus:
+      level.level === "Level 1"
+        ? baseWords.slice(0, 3)
+        : level.level === "Level 3"
+          ? baseWords.slice(0, 5)
+          : baseWords.slice(0, 4),
     circleTimeActivity:
       week === 1
-        ? `${titleCase(theme)} hello circle with picture cards and action songs.`
+        ? level.level === "Level 1"
+          ? `${titleCase(theme)} hello circle with large picture cards and one action song.`
+          : `${titleCase(theme)} hello circle with picture cards and action songs.`
         : week === 2
           ? `Sensory circle using ${theme.toLowerCase()} objects, textures, or songs.`
           : week === 3
@@ -138,7 +151,9 @@ function buildWeekPlan(
             : `Review circle using flashcards, songs, and simple recall prompts.`,
     teachingPlan:
       week === 1
-        ? "Introduce key theme words, model routines, and establish group expectations."
+        ? level.level === "Level 3"
+          ? "Introduce key theme words, model routines, and add a short independent follow-up."
+          : "Introduce key theme words, model routines, and establish group expectations."
         : week === 2
           ? "Expand language through sensory tasks and small-group imitation."
           : week === 3
@@ -146,42 +161,54 @@ function buildWeekPlan(
             : "Review, assess, and celebrate progress across the theme.",
     suggestedMaterials:
       week === 1
-        ? ["Visual cards", "Song props", "Theme objects"]
+        ? level.level === "Level 1"
+          ? ["Large visual cards", "Song props", "Theme objects"]
+          : ["Visual cards", "Song props", "Theme objects"]
         : week === 2
           ? ["Sensory tray", "Sorting mats", "Small manipulatives"]
-          : week === 3
+        : week === 3
             ? ["Turn-taking cards", "Flashcards", "Social story cards"]
             : ["Assessment checklist", "Reward stickers", "Celebration props"],
     parentCommunicationFocus:
       week === 1
-        ? "Share the new theme vocabulary and one home talking prompt."
+        ? level.level === "Level 1"
+          ? "Share the new theme words and one simple home pointing activity."
+          : "Share the new theme vocabulary and one home talking prompt."
         : week === 2
           ? "Suggest one sensory activity and one simple home routine idea."
-          : week === 3
+        : week === 3
             ? "Encourage turn-taking games and shared play at home."
             : "Summarise progress, favourite activities, and next-step ideas.",
     sensoryActivities:
       week >= 2
         ? [
             `${titleCase(theme)} sensory tray with matching objects.`,
-            "Texture search with simple request words."
+            level.level === "Level 3"
+              ? "Texture search with simple request words and a short sorting follow-up."
+              : "Texture search with simple request words."
           ]
         : ["Simple tactile warm-up with one focus object."],
     smallGroupActivities: [
-      `Picture-to-object matching for ${theme.toLowerCase()} vocabulary.`,
+      level.level === "Level 3"
+        ? `Picture-to-object matching plus short recall for ${theme.toLowerCase()} vocabulary.`
+        : `Picture-to-object matching for ${theme.toLowerCase()} vocabulary.`,
       `${focusGoal} tabletop game with visual turn cues.`
     ],
     visualSupportsNeeded: [
       "First-then board",
       "Turn card",
       "Choice board",
-      "Visual schedule strip"
+      level.level === "Level 3" ? "Simple task checklist" : "Visual schedule strip"
     ],
     suggestedPrintableResources:
       week === 1
-        ? ["Theme poster", "Visual cards", "Vocabulary mat"]
+        ? level.level === "Level 1"
+          ? ["Theme poster", "Large visual cards", "Vocabulary mat"]
+          : ["Theme poster", "Visual cards", "Vocabulary mat"]
         : week === 2
-          ? ["Sensory checklist", "Matching activity", "Routine strip"]
+          ? level.level === "Level 2.5" || level.level === "Level 3"
+            ? ["Sensory checklist", "Matching activity", "Short worksheet strip"]
+            : ["Sensory checklist", "Matching activity", "Routine strip"]
           : week === 3
             ? ["Flashcards", "Social story", "Behaviour reminder chart"]
             : ["Assessment sheet", "Review game cards", "Celebration certificate"],
@@ -194,13 +221,17 @@ function buildWeekPlan(
         : ["Partner imitation game with movement cues."],
     flashcardIdeas:
       week >= 3
-        ? ["Theme vocabulary flashcards", "Action flashcards", "Emotion cue flashcards"]
+        ? level.level === "Level 1"
+          ? ["Large theme flashcards", "Action flashcards", "Emotion cue flashcards"]
+          : ["Theme vocabulary flashcards", "Action flashcards", "Emotion cue flashcards"]
         : ["Large picture cards with one focus word each."],
     socialStoryIdeas:
       week >= 3
         ? [
-            `I play with my friends during ${theme.toLowerCase()}.`,
-            "I wait, share, and listen."
+            level.level === "Level 1"
+              ? `I play during ${theme.toLowerCase()}.`
+              : `I play with my friends during ${theme.toLowerCase()}.`,
+            level.level === "Level 3" ? "I wait, share, listen, and try again." : "I wait, share, and listen."
           ]
         : ["I join circle time.", "I look and listen."],
     behaviourSupportFocus:
@@ -213,7 +244,9 @@ function buildWeekPlan(
             : "Use review prompts, praise, and calm transitions during assessment.",
     reviewActivities:
       week === totalWeeks
-        ? ["Theme song review", "Word hunt review", "Picture match review"]
+        ? level.level === "Level 3"
+          ? ["Theme song review", "Word hunt review", "Picture match review", "Independent recap task"]
+          : ["Theme song review", "Word hunt review", "Picture match review"]
         : ["Quick flashcard recap", "One-song warm-up review"],
     assessmentActivities:
       week === totalWeeks
@@ -232,6 +265,7 @@ function buildWeekPlan(
         ? `${titleCase(theme)} mini celebration with song, stickers, and group display.`
         : "Simple finish activity with praise and sticker choice.",
     teacherPreparationChecklist: [
+      `Level focus: ${level.printableGuidance}`,
       "Print visual supports and key resources.",
       "Prepare one sensory or movement option.",
       "Set up calm transition supports.",
@@ -239,13 +273,16 @@ function buildWeekPlan(
     ],
     classroomSetup:
       week === 1
-        ? "Create a clear circle area, one table station, and a simple display board."
+        ? level.level === "Level 1"
+          ? "Create a clear circle area, one table station, and a low-clutter display board with large visuals."
+          : "Create a clear circle area, one table station, and a simple display board."
         : week === 2
           ? "Set up one sensory station and one visual matching table."
           : week === 3
             ? "Arrange a partner-play area with turn cues and shared materials."
             : "Prepare review stations and a small celebration display.",
     teacherTips: [
+      level.teacherScriptGuidance,
       "Keep directions under one sentence when possible.",
       "Model first, then invite participation.",
       "Alternate active and seated tasks to support regulation."
@@ -284,8 +321,8 @@ export function toThemePlanInsert(plan: GeneratedThemePlan): MaterialInsert {
   return {
     theme: plan.form.theme,
     subject: plan.form.mainLearningGoals,
-    skill_focus: plan.form.studentLevel,
-    student_level: plan.form.ageGroup,
+    skill_focus: plan.form.classroomSize,
+    student_level: plan.form.studentLevel,
     output_type: "Theme Planner",
     language: "English",
     difficulty: plan.form.duration,
@@ -318,9 +355,11 @@ export function fromThemePlanRow(row: MaterialRow): GeneratedThemePlan {
     form: {
       theme: row.theme,
       ageGroup:
-        typeof input.ageGroup === "string" ? input.ageGroup : row.student_level,
+        typeof input.ageGroup === "string" ? input.ageGroup : "",
       studentLevel:
-        typeof input.studentLevel === "string" ? input.studentLevel : row.skill_focus,
+        typeof input.studentLevel === "string"
+          ? normalizeStudentLevel(input.studentLevel)
+          : normalizeStudentLevel(row.student_level),
       duration:
         typeof input.duration === "string"
           ? (input.duration as ThemePlannerFormValues["duration"])

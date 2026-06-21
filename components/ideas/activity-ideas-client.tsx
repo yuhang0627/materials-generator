@@ -15,13 +15,14 @@ import {
   type ActivityIdeasFormValues,
   type GeneratedActivityIdeas
 } from "@/lib/activity-ideas";
-import { activityIdeaPrompts } from "@/lib/resource-options";
+import { activityIdeaPrompts, studentLevelOptions } from "@/lib/resource-options";
 import { createClient } from "@/lib/supabase/client";
 
 const defaultForm: ActivityIdeasFormValues = {
   query: activityIdeaPrompts[0],
   theme: "Malaysia National Day",
   ageGroup: "2-5",
+  studentLevel: "Level 1.5",
   focus: "Cohesive Play",
   constraints: "Use simple classroom materials only."
 };
@@ -35,7 +36,7 @@ export function ActivityIdeasClient({ userEmail }: { userEmail: string }) {
   useEffect(() => {
     const draft = getDraftIdeasForm();
     const current = getCurrentIdeas();
-    if (draft) setForm(draft);
+    if (draft) setForm({ ...defaultForm, ...draft });
     if (current) setResult(current);
   }, []);
 
@@ -119,6 +120,17 @@ export function ActivityIdeasClient({ userEmail }: { userEmail: string }) {
                 className="w-full border-0 bg-transparent text-ink outline-none"
               />
             </Field>
+            <Field label="Student Level">
+              <select
+                value={form.studentLevel}
+                onChange={(event) => updateField("studentLevel", event.target.value)}
+                className="w-full border-0 bg-transparent text-ink outline-none"
+              >
+                {studentLevelOptions.map((level) => (
+                  <option key={level}>{level}</option>
+                ))}
+              </select>
+            </Field>
             <Field label="Constraints">
               <input
                 value={form.constraints}
@@ -184,6 +196,9 @@ export function ActivityIdeasClient({ userEmail }: { userEmail: string }) {
 
           {result ? (
             <div className="space-y-4">
+              <div className="rounded-[24px] bg-mint/30 px-4 py-3 text-sm font-semibold text-ink/75">
+                Student Level: {result.form.studentLevel}
+              </div>
               {result.activityIdeas.map((idea) => (
                 <div
                   key={idea.title}

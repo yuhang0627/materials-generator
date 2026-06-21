@@ -19,6 +19,7 @@ import {
   type GeneratedThemePlan,
   type ThemePlannerFormValues
 } from "@/lib/theme-planner";
+import { studentLevelOptions } from "@/lib/resource-options";
 
 const defaultForm: ThemePlannerFormValues = {
   theme: "Malaysia National Day",
@@ -41,7 +42,7 @@ export function ThemePlannerClient({ userEmail }: { userEmail: string }) {
   useEffect(() => {
     const draft = getDraftThemePlanForm();
     const current = getCurrentThemePlan();
-    if (draft) setForm(draft);
+    if (draft) setForm({ ...defaultForm, ...draft });
     if (current) setPlan(current);
   }, []);
 
@@ -205,11 +206,15 @@ export function ThemePlannerClient({ userEmail }: { userEmail: string }) {
               />
             </Field>
             <Field label="Student Level">
-              <input
+              <select
                 value={form.studentLevel}
                 onChange={(event) => updateField("studentLevel", event.target.value)}
                 className="w-full border-0 bg-transparent text-ink outline-none"
-              />
+              >
+                {studentLevelOptions.map((level) => (
+                  <option key={level}>{level}</option>
+                ))}
+              </select>
             </Field>
             <Field label="Duration">
               <select
@@ -335,6 +340,17 @@ export function ThemePlannerClient({ userEmail }: { userEmail: string }) {
                     {plan.title}
                   </h2>
                   <p className="mt-3 text-sm leading-7 text-ink/75">{plan.summary}</p>
+                  <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold uppercase tracking-[0.12em] text-sage">
+                    <span className="rounded-full bg-white/80 px-3 py-2">
+                      {plan.form.studentLevel}
+                    </span>
+                    <span className="rounded-full bg-white/80 px-3 py-2">
+                      {plan.form.ageGroup}
+                    </span>
+                    <span className="rounded-full bg-white/80 px-3 py-2">
+                      {plan.form.duration}
+                    </span>
+                  </div>
                 </div>
 
                 <div className="mt-5 grid gap-4">

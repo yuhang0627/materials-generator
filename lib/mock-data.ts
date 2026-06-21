@@ -114,7 +114,16 @@ export const historyFilters = [
   "Teaching Plan",
   "Theme Pack",
   "Theme Planner",
+  "Social Story",
+  "Behaviour Chart",
+  "Reward Chart",
+  "Token Board",
+  "Visual Schedule",
+  "First Then Board",
+  "Classroom Rules Poster",
+  "Emotion Board",
   "theme-plan",
   "theme-pack",
+  "eip-toolkit",
   "activity-ideas"
 ];

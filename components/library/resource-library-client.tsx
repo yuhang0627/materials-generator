@@ -20,6 +20,11 @@ import {
   saveCurrentThemePack,
   saveDraftThemePackForm
 } from "@/lib/theme-packs";
+import {
+  fromToolkitRow,
+  saveCurrentToolkitResource,
+  saveDraftToolkitForm
+} from "@/lib/eip-toolkit";
 
 type ResourceLibraryClientProps = {
   rows: MaterialRow[];
@@ -128,6 +133,14 @@ export function ResourceLibraryClient({
       return;
     }
 
+    if (kind === "eip-toolkit") {
+      const toolkit = fromToolkitRow(row);
+      saveCurrentToolkitResource(toolkit);
+      saveDraftToolkitForm(toolkit.form);
+      setMessage("Toolkit resource loaded for editing");
+      return;
+    }
+
     const material = fromMaterialRow(row);
     saveCurrentMaterial(material);
     setMessage("Material loaded as current preview");
@@ -158,7 +171,7 @@ export function ResourceLibraryClient({
         </div>
 
         <div className="mt-4 flex flex-wrap gap-2">
-          {["All", "Favorites", "material", "teaching-plan", "theme-plan", "theme-pack", "activity-ideas"].map(
+          {["All", "Favorites", "material", "teaching-plan", "theme-plan", "theme-pack", "eip-toolkit", "activity-ideas"].map(
             (item) => (
               <button
                 key={item}
@@ -182,6 +195,8 @@ export function ResourceLibraryClient({
             const summary =
               kind === "teaching-plan"
                 ? fromTeachingPlanRow(row).summary
+                : kind === "eip-toolkit"
+                  ? fromToolkitRow(row).summary
                 : kind === "theme-pack"
                   ? fromThemePackRow(row).summary
                 : kind === "theme-plan"
@@ -192,6 +207,8 @@ export function ResourceLibraryClient({
             const title =
               kind === "teaching-plan"
                 ? fromTeachingPlanRow(row).title
+                : kind === "eip-toolkit"
+                  ? fromToolkitRow(row).title
                 : kind === "theme-pack"
                   ? fromThemePackRow(row).title
                 : kind === "theme-plan"
@@ -241,6 +258,8 @@ export function ResourceLibraryClient({
                   </button>
                   {kind === "teaching-plan" ? (
                     <Link href="/plans/create">Edit</Link>
+                  ) : kind === "eip-toolkit" ? (
+                    <Link href="/toolkit">Edit</Link>
                   ) : kind === "theme-pack" ? (
                     <Link href="/theme-packs">Edit</Link>
                   ) : kind === "theme-plan" ? (

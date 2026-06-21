@@ -13,6 +13,7 @@ import { SupabaseSetupNotice } from "@/components/supabase-setup-notice";
 import { fromTeachingPlanRow } from "@/lib/teaching-plan";
 import { fromThemePlanRow } from "@/lib/theme-planner";
 import { fromThemePackRow } from "@/lib/theme-packs";
+import { fromToolkitRow } from "@/lib/eip-toolkit";
 
 function getResourceKind(row: MaterialRow) {
   const generated = (row.generated_content ?? {}) as Record<string, unknown>;
@@ -46,6 +47,8 @@ export default async function DashboardPage() {
     const resource =
       kind === "teaching-plan"
         ? fromTeachingPlanRow(row)
+        : kind === "eip-toolkit"
+          ? fromToolkitRow(row)
         : kind === "theme-pack"
           ? fromThemePackRow(row)
         : kind === "theme-plan"
@@ -104,6 +107,7 @@ export default async function DashboardPage() {
 
           <div className="mt-6 flex flex-wrap gap-3">
             <PrimaryLink href="/materials/create">Create New Material</PrimaryLink>
+            <SecondaryLink href="/toolkit">Open EIP Toolkit</SecondaryLink>
             <SecondaryLink href="/theme-packs">Open Theme Packs</SecondaryLink>
             <SecondaryLink href="/theme-planner">Open Theme Planner</SecondaryLink>
             <SecondaryLink href="/plans/create">Open Teaching Plans</SecondaryLink>

@@ -17,6 +17,11 @@ import {
   saveCurrentThemePack,
   saveDraftThemePackForm
 } from "@/lib/theme-packs";
+import {
+  fromToolkitRow,
+  saveCurrentToolkitResource,
+  saveDraftToolkitForm
+} from "@/lib/eip-toolkit";
 import { createClient } from "@/lib/supabase/client";
 import type { MaterialRow } from "@/lib/supabase/types";
 import { historyFilters } from "@/lib/mock-data";
@@ -118,6 +123,14 @@ export function HistoryClient({
       return;
     }
 
+    if (kind === "eip-toolkit") {
+      const toolkit = fromToolkitRow(item);
+      saveCurrentToolkitResource(toolkit);
+      saveDraftToolkitForm(toolkit.form);
+      setMessage("Toolkit resource loaded");
+      return;
+    }
+
     if (kind === "activity-ideas") {
       const ideas = fromActivityIdeasRow(item);
       setMessage(`Idea pack ready: ${ideas.title}`);
@@ -188,6 +201,8 @@ export function HistoryClient({
             const entry =
               kind === "teaching-plan"
                 ? fromTeachingPlanRow(item)
+                : kind === "eip-toolkit"
+                  ? fromToolkitRow(item)
                 : kind === "theme-pack"
                   ? fromThemePackRow(item)
                 : kind === "theme-plan"
@@ -239,6 +254,8 @@ export function HistoryClient({
                   >
                     {kind === "theme-plan"
                       ? "Load theme planner"
+                      : kind === "eip-toolkit"
+                        ? "Load toolkit resource"
                       : kind === "theme-pack"
                         ? "Load theme pack"
                       : kind === "teaching-plan"
@@ -247,7 +264,9 @@ export function HistoryClient({
                   </button>
                   <Link
                     href={
-                      kind === "theme-pack"
+                      kind === "eip-toolkit"
+                        ? "/toolkit"
+                        : kind === "theme-pack"
                         ? "/theme-packs"
                         : kind === "theme-plan"
                         ? "/theme-planner"

@@ -300,6 +300,11 @@ function buildCanvaPrompt(form: MaterialFormValues, wordList: string[]) {
 function detectLayoutKind(form: MaterialFormValues): MaterialVisualLayout["kind"] {
   const value = `${form.materialType || form.outputType}`.toLowerCase();
 
+  if (value.includes("token board")) return "reward-chart";
+  if (value.includes("first then")) return "routine-chart";
+  if (value.includes("visual schedule")) return "routine-chart";
+  if (value.includes("emotion board")) return "visual-cards";
+  if (value.includes("classroom rules")) return "poster";
   if (value.includes("flashcard")) return "visual-cards";
   if (value.includes("visual card")) return "visual-cards";
   if (value.includes("classroom poster")) return "poster";

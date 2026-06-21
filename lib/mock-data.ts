@@ -1,80 +1,3 @@
-export type MaterialRecord = {
-  id: string;
-  title: string;
-  theme: string;
-  subject: string;
-  outputType: string;
-  language: string;
-  level: string;
-  status: "Ready" | "Draft";
-  createdAt: string;
-  description: string;
-};
-
-export const dashboardStats = [
-  { label: "Materials Created", value: "128", note: "This month" },
-  { label: "Ready to Reuse", value: "36", note: "Saved favourites" },
-  { label: "Student Profiles", value: "12", note: "Sample profiles" },
-  { label: "Avg. Prep Time", value: "18 min", note: "With templates" }
-];
-
-export const quickTemplates = [
-  {
-    title: "Feelings Visual Cards",
-    description: "Emotion cards with clear labels and soft guidance prompts.",
-    tag: "Visual cards"
-  },
-  {
-    title: "Simple Morning Routine",
-    description: "Step-by-step visual support for transitions and independence.",
-    tag: "Social story"
-  },
-  {
-    title: "CVC Word Practice",
-    description: "Short phonics worksheet with tracing and matching tasks.",
-    tag: "Worksheet"
-  }
-];
-
-export const recentMaterials: MaterialRecord[] = [
-  {
-    id: "MAT-201",
-    title: "Ocean Feelings Word List",
-    theme: "Ocean",
-    subject: "Language",
-    outputType: "Word list",
-    language: "English",
-    level: "Emerging readers",
-    status: "Ready",
-    createdAt: "Today, 10:15 AM",
-    description: "12 emotional vocabulary words with picture cue ideas."
-  },
-  {
-    id: "MAT-198",
-    title: "My Calm Body Worksheet",
-    theme: "Self-regulation",
-    subject: "Life skills",
-    outputType: "Behaviour worksheet",
-    language: "English",
-    level: "Primary support",
-    status: "Ready",
-    createdAt: "Yesterday",
-    description: "Breathing, body check-in, and colour-in calm choices."
-  },
-  {
-    id: "MAT-193",
-    title: "Community Helpers Poster",
-    theme: "Community",
-    subject: "Social studies",
-    outputType: "Poster content",
-    language: "English",
-    level: "Beginner",
-    status: "Draft",
-    createdAt: "Jun 18",
-    description: "Short poster copy with icons and sentence starters."
-  }
-];
-
 export const formDefaults = {
   theme: "Malaysia National Day",
   subject: "Language and communication",
@@ -104,26 +27,26 @@ export const blankFormDefaults = {
   extraInstruction: ""
 };
 
-export const historyFilters = [
-  "All",
-  "Classroom Poster",
-  "Worksheet",
-  "Visual cards",
-  "Behaviour worksheet",
-  "Song Poster",
-  "Teaching Plan",
-  "Theme Pack",
-  "Theme Planner",
-  "Social Story",
-  "Behaviour Chart",
-  "Reward Chart",
-  "Token Board",
-  "Visual Schedule",
-  "First Then Board",
-  "Classroom Rules Poster",
-  "Emotion Board",
-  "theme-plan",
-  "theme-pack",
-  "eip-toolkit",
-  "activity-ideas"
+/**
+ * History filters keyed by resourceKind so every saved resource type maps to a
+ * single, teacher-friendly category chip (instead of a mix of labels + slugs).
+ */
+export const historyFilters: Array<{ label: string; match: string }> = [
+  { label: "All", match: "All" },
+  { label: "Materials", match: "material" },
+  { label: "Teaching Plans", match: "teaching-plan" },
+  { label: "Theme Packs", match: "theme-pack" },
+  { label: "Theme Planner", match: "theme-plan" },
+  { label: "EIP Toolkit", match: "eip-toolkit" },
+  { label: "Activity Ideas", match: "activity-ideas" }
 ];
+
+/** Human-friendly labels for the resourceKind stored on each saved row. */
+export const resourceKindLabels: Record<string, string> = {
+  material: "Material",
+  "teaching-plan": "Teaching Plan",
+  "theme-plan": "Theme Planner",
+  "theme-pack": "Theme Pack",
+  "eip-toolkit": "EIP Toolkit",
+  "activity-ideas": "Activity Ideas"
+};

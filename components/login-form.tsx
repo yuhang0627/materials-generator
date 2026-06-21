@@ -98,7 +98,9 @@ export function LoginForm() {
       </p>
 
       {message ? (
-        <p className="text-sm font-semibold text-sage">{message}</p>
+        <p className="rounded-2xl bg-[#fbeaea] px-4 py-3 text-sm font-semibold text-[#b35f5f]">
+          {message}
+        </p>
       ) : null}
     </form>
   );

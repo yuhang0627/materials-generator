@@ -24,7 +24,7 @@ import {
 } from "@/lib/eip-toolkit";
 import { createClient } from "@/lib/supabase/client";
 import type { MaterialRow } from "@/lib/supabase/types";
-import { historyFilters } from "@/lib/mock-data";
+import { historyFilters, resourceKindLabels } from "@/lib/mock-data";
 import { fromTeachingPlanRow, saveCurrentPlan, saveDraftPlanForm } from "@/lib/teaching-plan";
 
 function getResourceKind(row: MaterialRow) {
@@ -170,13 +170,15 @@ export function HistoryClient({
         <div className="mt-4 flex flex-wrap gap-2">
           {historyFilters.map((filter) => (
             <button
-              key={filter}
-              onClick={() => setActiveFilter(filter)}
-              className={`rounded-full px-4 py-2 text-sm font-bold ${
-                activeFilter === filter ? "bg-sage text-white" : "bg-white text-ink"
+              key={filter.match}
+              onClick={() => setActiveFilter(filter.match)}
+              className={`rounded-full px-4 py-2 text-sm font-bold transition ${
+                activeFilter === filter.match
+                  ? "bg-sage text-white"
+                  : "bg-white text-ink hover:bg-cream"
               }`}
             >
-              {filter}
+              {filter.label}
             </button>
           ))}
         </div>
@@ -223,7 +225,7 @@ export function HistoryClient({
                         {new Date(item.created_at).toLocaleString("en-MY")}
                       </p>
                       <InfoPill>Saved in Supabase</InfoPill>
-                      <InfoPill>{kind}</InfoPill>
+                      <InfoPill>{resourceKindLabels[kind] ?? kind}</InfoPill>
                     </div>
                     <h3 className="mt-3 font-display text-2xl font-bold text-ink">
                       {entry.title}

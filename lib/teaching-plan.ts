@@ -234,6 +234,47 @@ function splitDuration(duration: string) {
   );
 }
 
+/** Renders a plan as clean, paste-ready plain text for export/copy. */
+export function planToPlainText(plan: GeneratedTeachingPlan): string {
+  const lines: string[] = [];
+
+  lines.push(plan.title);
+  lines.push(plan.summary);
+  lines.push("");
+  lines.push(`Theme: ${plan.form.theme}`);
+  lines.push(`Goal: ${plan.form.goal}`);
+  lines.push(`Student level: ${plan.form.studentLevel}`);
+  lines.push(`Group size: ${plan.form.groupSize}`);
+  lines.push(`Duration: ${plan.form.duration}`);
+  lines.push("");
+
+  if (plan.setupNotes.length > 0) {
+    lines.push("SESSION SETUP");
+    plan.setupNotes.forEach((note) => lines.push(`- ${note}`));
+    lines.push("");
+  }
+
+  plan.activities.forEach((activity, index) => {
+    lines.push(`ACTIVITY ${index + 1}: ${activity.title}`);
+    lines.push(`Objective: ${activity.objective}`);
+    lines.push(`Materials: ${activity.materials.join(", ")}`);
+    lines.push(`Duration: ${activity.duration}`);
+    lines.push(`Setup: ${activity.setup}`);
+    lines.push(`Teacher script: ${activity.teacherScript}`);
+    lines.push(`Expected responses: ${activity.expectedStudentResponse.join("; ")}`);
+    lines.push("Differentiation:");
+    lines.push(`  Easier: ${activity.easyVersion}`);
+    lines.push(`  Core: ${activity.mediumVersion}`);
+    lines.push(`  Extend: ${activity.advancedVersion}`);
+    lines.push(`Adaptations: ${activity.adaptationIdeas.join("; ")}`);
+    lines.push(`Behaviour support: ${activity.behaviourSupportStrategies.join("; ")}`);
+    lines.push(`Transition: ${activity.transitionSuggestion}`);
+    lines.push("");
+  });
+
+  return lines.join("\n").trim();
+}
+
 export function saveCurrentPlan(plan: GeneratedTeachingPlan) {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(STORAGE_KEYS.current, JSON.stringify(plan));

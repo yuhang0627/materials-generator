@@ -23,10 +23,22 @@ export function GeneratedResultClient({ userEmail }: { userEmail: string }) {
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
   const [exporting, setExporting] = useState<"" | "png" | "pdf" | "print">("");
+  const [genMeta, setGenMeta] = useState<{ source?: string; notice?: string }>({});
   const previewRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMaterial(getCurrentMaterial());
+
+    if (typeof window !== "undefined") {
+      const raw = window.localStorage.getItem("materials-generator/source");
+      if (raw) {
+        try {
+          setGenMeta(JSON.parse(raw));
+        } catch {
+          setGenMeta({});
+        }
+      }
+    }
   }, []);
 
   async function handleCopy(label: string, text: string) {
@@ -208,11 +220,28 @@ export function GeneratedResultClient({ userEmail }: { userEmail: string }) {
     >
       <div className="space-y-5">
         <Surface className="animate-fade-up">
-          <SectionTitle
-            eyebrow="Source Settings"
-            title="Teaching material summary"
-            description="A quick overview of the prompt values used for this result."
-          />
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <SectionTitle
+              eyebrow="Source Settings"
+              title="Teaching material summary"
+              description="A quick overview of the prompt values used for this result."
+            />
+            <span
+              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold ${
+                genMeta.source === "ai"
+                  ? "bg-mint/60 text-ink/80"
+                  : "bg-lilac/60 text-ink/80"
+              }`}
+            >
+              {genMeta.source === "ai" ? "✨ AI-generated" : "📐 Offline sample"}
+            </span>
+          </div>
+
+          {genMeta.notice ? (
+            <p className="mt-3 rounded-[18px] bg-peach/40 px-4 py-3 text-sm font-semibold text-ink/80">
+              {genMeta.notice}
+            </p>
+          ) : null}
 
           <div className="mt-5 flex flex-wrap gap-3">
             {[

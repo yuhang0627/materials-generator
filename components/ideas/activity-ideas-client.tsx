@@ -73,21 +73,23 @@ export function ActivityIdeasClient({ userEmail }: { userEmail: string }) {
 
   return (
     <AppShell
-      title="Search Mode"
-      description="Generate search-style ideas for activities, teaching plans, printable suggestions, and classroom setup support."
+      title="Activity Ideas"
+      description="Generate quick, level-appropriate activity ideas — with classroom setup and printable suggestions — for your theme and focus."
       userEmail={userEmail}
       headerAction={<SignOutButton />}
     >
       <div className="space-y-5">
         <Surface className="animate-fade-up">
           <SectionTitle
-            eyebrow="Search Prompt"
-            title="Ask for classroom ideas"
-            description="Use a broad request when you want activity ideas, plan directions, or printable suggestions."
+            eyebrow="Activity Request"
+            title="What do you need ideas for?"
+            description="Describe what you're planning, set the theme, focus, and student level, then generate a pack of ready-to-try ideas."
           />
 
           <label className="block">
-            <span className="mb-2 block text-sm font-semibold text-ink">Search Request</span>
+            <span className="mb-2 block text-sm font-semibold text-ink">
+              Describe what you need
+            </span>
             <div className="field-shell rounded-[24px] px-4 py-3">
               <textarea
                 rows={5}
@@ -168,17 +170,23 @@ export function ActivityIdeasClient({ userEmail }: { userEmail: string }) {
             </button>
           </div>
 
-          <div className="mt-5 flex flex-wrap gap-2">
-            {activityIdeaPrompts.map((prompt) => (
-              <button
-                key={prompt}
-                type="button"
-                onClick={() => updateField("query", prompt)}
-                className="rounded-full bg-cream px-3 py-2 text-xs font-semibold text-ink/75"
-              >
-                Use Sample Prompt
-              </button>
-            ))}
+          <div className="mt-5">
+            <p className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-sage">
+              Try one of these
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {activityIdeaPrompts.map((prompt) => (
+                <button
+                  key={prompt}
+                  type="button"
+                  onClick={() => updateField("query", prompt)}
+                  title={prompt}
+                  className="max-w-full rounded-full bg-cream px-3 py-2 text-left text-xs font-semibold text-ink/75 transition hover:bg-mint/50"
+                >
+                  {prompt.length > 52 ? `${prompt.slice(0, 52)}…` : prompt}
+                </button>
+              ))}
+            </div>
           </div>
 
           {message ? <p className="mt-3 text-sm font-semibold text-sage">{message}</p> : null}
@@ -199,22 +207,59 @@ export function ActivityIdeasClient({ userEmail }: { userEmail: string }) {
               <div className="rounded-[24px] bg-mint/30 px-4 py-3 text-sm font-semibold text-ink/75">
                 Student Level: {result.form.studentLevel}
               </div>
-              {result.activityIdeas.map((idea) => (
+              {result.activityIdeas.map((idea, index) => (
                 <div
-                  key={idea.title}
+                  key={`${idea.title}-${index}`}
                   className="rounded-[26px] bg-gradient-to-r from-white to-cream p-4"
                 >
                   <h3 className="font-display text-2xl font-bold text-ink">{idea.title}</h3>
                   <p className="mt-2 text-sm font-semibold text-sage">{idea.type}</p>
                   <p className="mt-3 text-sm leading-7 text-ink/78">{idea.description}</p>
                   <p className="mt-2 text-sm leading-7 text-ink/76">
-                    Setup: {idea.classroomSetup}
+                    <span className="font-semibold text-ink">Setup:</span>{" "}
+                    {idea.classroomSetup}
                   </p>
                   <p className="mt-2 text-sm leading-7 text-ink/76">
-                    Printable: {idea.printableMaterialSuggestion}
+                    <span className="font-semibold text-ink">Printable:</span>{" "}
+                    {idea.printableMaterialSuggestion}
                   </p>
                 </div>
               ))}
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="rounded-[26px] bg-mint/25 p-4">
+                  <h3 className="font-display text-xl font-bold text-ink">
+                    Classroom setup ideas
+                  </h3>
+                  <ul className="mt-3 space-y-2">
+                    {result.classroomSetupIdeas.map((item, index) => (
+                      <li
+                        key={`${item}-${index}`}
+                        className="flex gap-2 text-sm leading-7 text-ink/78"
+                      >
+                        <span className="text-sage">•</span>
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="rounded-[26px] bg-blush/30 p-4">
+                  <h3 className="font-display text-xl font-bold text-ink">
+                    Printable suggestions
+                  </h3>
+                  <ul className="mt-3 space-y-2">
+                    {result.printableSuggestions.map((item, index) => (
+                      <li
+                        key={`${item}-${index}`}
+                        className="flex gap-2 text-sm leading-7 text-ink/78"
+                      >
+                        <span className="text-sage">•</span>
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
             </div>
           ) : null}
         </Surface>

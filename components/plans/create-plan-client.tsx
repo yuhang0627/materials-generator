@@ -9,12 +9,14 @@ import {
   generateTeachingPlan,
   getCurrentPlan,
   getDraftPlanForm,
+  planToPlainText,
   saveCurrentPlan,
   saveDraftPlanForm,
   toTeachingPlanInsert,
   type GeneratedTeachingPlan,
   type TeachingPlanFormValues
 } from "@/lib/teaching-plan";
+import { copyText } from "@/lib/material-generator";
 import { createClient } from "@/lib/supabase/client";
 import { studentLevelOptions, teachingPlanGoalOptions } from "@/lib/resource-options";
 
@@ -61,6 +63,12 @@ export function CreatePlanClient({ userEmail }: { userEmail: string }) {
     setMessage("Teaching plan generated");
   }
 
+  async function handleCopy() {
+    if (!plan) return;
+    await copyText(planToPlainText(plan));
+    setMessage("Plan copied as text — paste it into your lesson template");
+  }
+
   async function handleSave() {
     if (!plan) return;
     setSaving(true);
@@ -85,8 +93,8 @@ export function CreatePlanClient({ userEmail }: { userEmail: string }) {
 
   return (
     <AppShell
-      title="Teaching Plan Generator"
-      description="Build activity plans for Early Intervention Program teaching with clear scripts, support ideas, and printable-ready structure."
+      title="Teaching Plans"
+      description="Build activity plans for Early Intervention Program teaching, with clear teacher scripts, expected responses, differentiation, and behaviour support."
       userEmail={userEmail}
       headerAction={<SignOutButton />}
     >
@@ -208,6 +216,14 @@ export function CreatePlanClient({ userEmail }: { userEmail: string }) {
             </button>
             <button
               type="button"
+              onClick={() => void handleCopy()}
+              disabled={!plan}
+              className="rounded-full bg-white px-5 py-3 text-sm font-bold text-ink disabled:opacity-60"
+            >
+              Copy Plan
+            </button>
+            <button
+              type="button"
               onClick={() => void handleSave()}
               disabled={!plan || saving}
               className="rounded-full bg-white px-5 py-3 text-sm font-bold text-ink disabled:opacity-60"
@@ -231,35 +247,95 @@ export function CreatePlanClient({ userEmail }: { userEmail: string }) {
 
           {plan ? (
             <div className="space-y-4">
-              <div className="rounded-[24px] bg-mint/30 px-4 py-3 text-sm font-semibold text-ink/75">
-                Student Level: {plan.form.studentLevel}
+              <div className="flex flex-wrap gap-2">
+                <Tag>{plan.form.studentLevel}</Tag>
+                <Tag>{plan.form.goal}</Tag>
+                <Tag>{plan.form.groupSize}</Tag>
+                <Tag>{plan.form.duration}</Tag>
               </div>
+
+              {plan.setupNotes.length > 0 ? (
+                <div className="rounded-[24px] bg-mint/30 p-4">
+                  <p className="font-display text-lg font-bold text-ink">
+                    Session setup
+                  </p>
+                  <ul className="mt-2 space-y-1.5">
+                    {plan.setupNotes.map((note, index) => (
+                      <li
+                        key={`${note}-${index}`}
+                        className="flex gap-2 text-sm leading-7 text-ink/78"
+                      >
+                        <span className="text-sage">•</span>
+                        <span>{note}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+
               {plan.activities.map((activity, index) => (
                 <div
                   key={`${activity.title}-${index}`}
-                  className="rounded-[26px] bg-gradient-to-br from-white to-cream p-4"
+                  className="rounded-[26px] bg-gradient-to-br from-white to-cream p-5"
                 >
                   <p className="text-xs font-bold uppercase tracking-[0.18em] text-sage">
-                    Activity {index + 1}
+                    Activity {index + 1} · {activity.duration}
                   </p>
                   <h3 className="mt-2 font-display text-2xl font-bold text-ink">
                     {activity.title}
                   </h3>
+
+                  <div className="mt-3 grid gap-2 text-sm leading-7 text-ink/78 sm:grid-cols-2">
+                    <p>
+                      <span className="font-semibold text-ink">Objective:</span>{" "}
+                      {activity.objective}
+                    </p>
+                    <p>
+                      <span className="font-semibold text-ink">Materials:</span>{" "}
+                      {activity.materials.join(", ")}
+                    </p>
+                  </div>
+
                   <p className="mt-2 text-sm leading-7 text-ink/78">
-                    Objective: {activity.objective}
+                    <span className="font-semibold text-ink">Setup:</span>{" "}
+                    {activity.setup}
                   </p>
-                  <p className="text-sm leading-7 text-ink/78">
-                    Materials: {activity.materials.join(", ")}
-                  </p>
-                  <p className="text-sm leading-7 text-ink/78">
-                    Duration: {activity.duration}
-                  </p>
-                  <p className="mt-3 text-sm leading-7 text-ink/78">
-                    Setup: {activity.setup}
-                  </p>
+
                   <p className="mt-3 rounded-[18px] bg-mint/25 px-4 py-3 text-sm font-semibold text-ink/75">
-                    Teacher Script: {activity.teacherScript}
+                    🗣️ Teacher script: {activity.teacherScript}
                   </p>
+
+                  {activity.expectedStudentResponse.length > 0 ? (
+                    <PlanList
+                      heading="Expected student responses"
+                      items={activity.expectedStudentResponse}
+                    />
+                  ) : null}
+
+                  <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                    <DiffCard tone="bg-blush/35" label="Easier" text={activity.easyVersion} />
+                    <DiffCard tone="bg-mint/35" label="Core" text={activity.mediumVersion} />
+                    <DiffCard tone="bg-lilac/40" label="Extend" text={activity.advancedVersion} />
+                  </div>
+
+                  <div className="mt-3 grid gap-3 md:grid-cols-2">
+                    {activity.adaptationIdeas.length > 0 ? (
+                      <PlanList heading="Adaptations" items={activity.adaptationIdeas} />
+                    ) : null}
+                    {activity.behaviourSupportStrategies.length > 0 ? (
+                      <PlanList
+                        heading="Behaviour support"
+                        items={activity.behaviourSupportStrategies}
+                      />
+                    ) : null}
+                  </div>
+
+                  {activity.transitionSuggestion ? (
+                    <p className="mt-3 text-sm leading-7 text-ink/72">
+                      <span className="font-semibold text-ink">Transition:</span>{" "}
+                      {activity.transitionSuggestion}
+                    </p>
+                  ) : null}
                 </div>
               ))}
             </div>
@@ -282,5 +358,53 @@ function Field({
       <span className="mb-2 block text-sm font-semibold text-ink">{label}</span>
       <div className="field-shell rounded-2xl px-4 py-3">{children}</div>
     </label>
+  );
+}
+
+function Tag({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="rounded-full bg-white/80 px-3 py-1.5 text-xs font-bold text-ink/75 shadow-sm">
+      {children}
+    </span>
+  );
+}
+
+function PlanList({ heading, items }: { heading: string; items: string[] }) {
+  return (
+    <div className="mt-3 rounded-[18px] bg-white/70 p-4">
+      <p className="text-xs font-bold uppercase tracking-[0.16em] text-sage">
+        {heading}
+      </p>
+      <ul className="mt-2 space-y-1.5">
+        {items.map((item, index) => (
+          <li
+            key={`${item}-${index}`}
+            className="flex gap-2 text-sm leading-7 text-ink/78"
+          >
+            <span className="text-sage">•</span>
+            <span>{item}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function DiffCard({
+  tone,
+  label,
+  text
+}: {
+  tone: string;
+  label: string;
+  text: string;
+}) {
+  return (
+    <div className={`rounded-[18px] ${tone} p-3`}>
+      <p className="text-xs font-bold uppercase tracking-[0.16em] text-ink/60">
+        {label}
+      </p>
+      <p className="mt-1.5 text-sm leading-6 text-ink/78">{text}</p>
+    </div>
   );
 }

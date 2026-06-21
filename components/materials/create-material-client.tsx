@@ -51,6 +51,8 @@ export function CreateMaterialClient({ userEmail }: { userEmail: string }) {
     const data = (await response.json()) as {
       error?: string;
       material?: GeneratedMaterial;
+      source?: "ai" | "offline";
+      notice?: string;
     };
 
     if (!response.ok || !data.material) {
@@ -60,6 +62,12 @@ export function CreateMaterialClient({ userEmail }: { userEmail: string }) {
     }
 
     saveCurrentMaterial(data.material);
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(
+        "materials-generator/source",
+        JSON.stringify({ source: data.source ?? "ai", notice: data.notice ?? "" })
+      );
+    }
     router.push("/materials/result");
     router.refresh();
   }
@@ -83,7 +91,7 @@ export function CreateMaterialClient({ userEmail }: { userEmail: string }) {
           <SectionTitle
             eyebrow="Material Builder"
             title="Prepare a new prompt"
-            description="Generate builds a local result preview from the fields below. You can then save that generated material into Supabase."
+            description="Generate builds a printable preview from the fields below — using AI when an API key is configured, or built-in templates otherwise. You can then save the result to your library."
           />
 
           <form

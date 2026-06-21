@@ -6,9 +6,27 @@ import { AppShell } from "@/components/app-shell";
 import { InfoPill, SectionTitle, Surface } from "@/components/ui";
 import { SignOutButton } from "@/components/sign-out-button";
 import { fromMaterialRow, saveCurrentMaterial } from "@/lib/material-generator";
+import { fromActivityIdeasRow } from "@/lib/activity-ideas";
+import {
+  fromThemePlanRow,
+  saveCurrentThemePlan,
+  saveDraftThemePlanForm
+} from "@/lib/theme-planner";
 import { createClient } from "@/lib/supabase/client";
 import type { MaterialRow } from "@/lib/supabase/types";
 import { historyFilters } from "@/lib/mock-data";
+import { fromTeachingPlanRow, saveCurrentPlan, saveDraftPlanForm } from "@/lib/teaching-plan";
+
+function getResourceKind(row: MaterialRow) {
+  const generated = (row.generated_content ?? {}) as Record<string, unknown>;
+  const input = (row.input_data ?? {}) as Record<string, unknown>;
+
+  return typeof generated.resourceKind === "string"
+    ? generated.resourceKind
+    : typeof input.resourceKind === "string"
+      ? input.resourceKind
+      : "material";
+}
 
 export function HistoryClient({
   initialRows,
@@ -44,7 +62,9 @@ export function HistoryClient({
   const filteredHistory = useMemo(() => {
     return history.filter((item) => {
       const matchesFilter =
-        activeFilter === "All" || item.output_type === activeFilter;
+        activeFilter === "All" ||
+        item.output_type === activeFilter ||
+        getResourceKind(item) === activeFilter;
       const searchText =
         `${item.theme} ${item.subject} ${item.output_type} ${item.skill_focus}`.toLowerCase();
       const matchesQuery = searchText.includes(query.toLowerCase());
@@ -64,6 +84,36 @@ export function HistoryClient({
 
     setHistory((current) => current.filter((item) => item.id !== id));
     setMessage("Material deleted");
+  }
+
+  function handleLoad(item: MaterialRow) {
+    const kind = getResourceKind(item);
+
+    if (kind === "teaching-plan") {
+      const plan = fromTeachingPlanRow(item);
+      saveCurrentPlan(plan);
+      saveDraftPlanForm(plan.form);
+      setMessage("Teaching plan loaded");
+      return;
+    }
+
+    if (kind === "theme-plan") {
+      const themePlan = fromThemePlanRow(item);
+      saveCurrentThemePlan(themePlan);
+      saveDraftThemePlanForm(themePlan.form);
+      setMessage("Theme planner loaded");
+      return;
+    }
+
+    if (kind === "activity-ideas") {
+      const ideas = fromActivityIdeasRow(item);
+      setMessage(`Idea pack ready: ${ideas.title}`);
+      return;
+    }
+
+    const material = fromMaterialRow(item);
+    saveCurrentMaterial(material);
+    setMessage("Loaded as current result");
   }
 
   return (
@@ -121,7 +171,15 @@ export function HistoryClient({
           ) : null}
 
           {filteredHistory.map((item) => {
-            const material = fromMaterialRow(item);
+            const kind = getResourceKind(item);
+            const entry =
+              kind === "teaching-plan"
+                ? fromTeachingPlanRow(item)
+                : kind === "theme-plan"
+                  ? fromThemePlanRow(item)
+                  : kind === "activity-ideas"
+                    ? fromActivityIdeasRow(item)
+                    : fromMaterialRow(item);
 
             return (
               <div
@@ -135,12 +193,13 @@ export function HistoryClient({
                         {new Date(item.created_at).toLocaleString("en-MY")}
                       </p>
                       <InfoPill>Saved in Supabase</InfoPill>
+                      <InfoPill>{kind}</InfoPill>
                     </div>
                     <h3 className="mt-3 font-display text-2xl font-bold text-ink">
-                      {material.title}
+                      {entry.title}
                     </h3>
                     <p className="mt-2 max-w-3xl text-sm leading-7 text-ink/75">
-                      {material.summary}
+                      {entry.summary}
                     </p>
                   </div>
 
@@ -160,15 +219,28 @@ export function HistoryClient({
                 <div className="mt-5 flex flex-wrap gap-4 text-sm font-bold text-sage">
                   <button
                     type="button"
-                    onClick={() => {
-                      saveCurrentMaterial(material);
-                      setMessage("Loaded as current result");
-                    }}
+                    onClick={() => handleLoad(item)}
                     className="text-left"
                   >
-                    Load as current result
+                    {kind === "theme-plan"
+                      ? "Load theme planner"
+                      : kind === "teaching-plan"
+                        ? "Load teaching plan"
+                        : "Load as current result"}
                   </button>
-                  <Link href="/materials/result">Open preview</Link>
+                  <Link
+                    href={
+                      kind === "theme-plan"
+                        ? "/theme-planner"
+                        : kind === "teaching-plan"
+                          ? "/plans/create"
+                          : kind === "activity-ideas"
+                            ? "/ideas"
+                            : "/materials/result"
+                    }
+                  >
+                    Open preview
+                  </Link>
                   <button
                     type="button"
                     onClick={() => void handleDelete(item.id)}

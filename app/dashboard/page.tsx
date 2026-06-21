@@ -6,9 +6,23 @@ import { AppShell } from "@/components/app-shell";
 import { InfoPill, PrimaryLink, SectionTitle, SecondaryLink, Surface } from "@/components/ui";
 import { dashboardStats, quickTemplates, recentMaterials } from "@/lib/mock-data";
 import { fromMaterialRow } from "@/lib/material-generator";
+import { fromActivityIdeasRow } from "@/lib/activity-ideas";
 import type { MaterialRow } from "@/lib/supabase/types";
 import { SignOutButton } from "@/components/sign-out-button";
 import { SupabaseSetupNotice } from "@/components/supabase-setup-notice";
+import { fromTeachingPlanRow } from "@/lib/teaching-plan";
+import { fromThemePlanRow } from "@/lib/theme-planner";
+
+function getResourceKind(row: MaterialRow) {
+  const generated = (row.generated_content ?? {}) as Record<string, unknown>;
+  const input = (row.input_data ?? {}) as Record<string, unknown>;
+
+  return typeof generated.resourceKind === "string"
+    ? generated.resourceKind
+    : typeof input.resourceKind === "string"
+      ? input.resourceKind
+      : "material";
+}
 
 export default async function DashboardPage() {
   if (!hasSupabaseEnv()) {
@@ -27,16 +41,24 @@ export default async function DashboardPage() {
   ]);
 
   const recentFromSupabase = ((data ?? []) as MaterialRow[]).map((row) => {
-    const material = fromMaterialRow(row);
+    const kind = getResourceKind(row);
+    const resource =
+      kind === "teaching-plan"
+        ? fromTeachingPlanRow(row)
+        : kind === "theme-plan"
+          ? fromThemePlanRow(row)
+          : kind === "activity-ideas"
+            ? fromActivityIdeasRow(row)
+            : fromMaterialRow(row);
 
     return {
       id: row.id,
-      title: material.title,
+      title: resource.title,
       status: "Saved",
       outputType: row.output_type,
       level: row.student_level,
       createdAt: new Date(row.created_at).toLocaleString("en-MY"),
-      description: material.summary
+      description: resource.summary
     };
   });
 
@@ -79,6 +101,7 @@ export default async function DashboardPage() {
 
           <div className="mt-6 flex flex-wrap gap-3">
             <PrimaryLink href="/materials/create">Create New Material</PrimaryLink>
+            <SecondaryLink href="/theme-planner">Open Theme Planner</SecondaryLink>
             <SecondaryLink href="/plans/create">Open Teaching Plans</SecondaryLink>
             <SecondaryLink href="/library">Open Resource Library</SecondaryLink>
           </div>

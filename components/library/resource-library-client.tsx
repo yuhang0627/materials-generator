@@ -10,6 +10,11 @@ import { fromActivityIdeasRow } from "@/lib/activity-ideas";
 import { fromMaterialRow, saveCurrentMaterial } from "@/lib/material-generator";
 import type { MaterialRow } from "@/lib/supabase/types";
 import { fromTeachingPlanRow, saveCurrentPlan, saveDraftPlanForm } from "@/lib/teaching-plan";
+import {
+  fromThemePlanRow,
+  saveCurrentThemePlan,
+  saveDraftThemePlanForm
+} from "@/lib/theme-planner";
 
 type ResourceLibraryClientProps = {
   rows: MaterialRow[];
@@ -102,6 +107,14 @@ export function ResourceLibraryClient({
       return;
     }
 
+    if (kind === "theme-plan") {
+      const themePlan = fromThemePlanRow(row);
+      saveCurrentThemePlan(themePlan);
+      saveDraftThemePlanForm(themePlan.form);
+      setMessage("Theme planner loaded for editing");
+      return;
+    }
+
     const material = fromMaterialRow(row);
     saveCurrentMaterial(material);
     setMessage("Material loaded as current preview");
@@ -132,7 +145,7 @@ export function ResourceLibraryClient({
         </div>
 
         <div className="mt-4 flex flex-wrap gap-2">
-          {["All", "Favorites", "material", "teaching-plan", "activity-ideas"].map(
+          {["All", "Favorites", "material", "teaching-plan", "theme-plan", "activity-ideas"].map(
             (item) => (
               <button
                 key={item}
@@ -156,9 +169,19 @@ export function ResourceLibraryClient({
             const summary =
               kind === "teaching-plan"
                 ? fromTeachingPlanRow(row).summary
+                : kind === "theme-plan"
+                  ? fromThemePlanRow(row).summary
                 : kind === "activity-ideas"
                   ? fromActivityIdeasRow(row).summary
                   : fromMaterialRow(row).summary;
+            const title =
+              kind === "teaching-plan"
+                ? fromTeachingPlanRow(row).title
+                : kind === "theme-plan"
+                  ? fromThemePlanRow(row).title
+                  : kind === "activity-ideas"
+                    ? fromActivityIdeasRow(row).title
+                    : fromMaterialRow(row).title;
 
             return (
               <div
@@ -175,7 +198,7 @@ export function ResourceLibraryClient({
                       {isFavorite(row) ? <InfoPill>Favorite</InfoPill> : null}
                     </div>
                     <h3 className="mt-3 font-display text-2xl font-bold text-ink">
-                      {row.theme}
+                      {title}
                     </h3>
                     <p className="mt-2 max-w-3xl text-sm leading-7 text-ink/75">
                       {summary}
@@ -201,6 +224,8 @@ export function ResourceLibraryClient({
                   </button>
                   {kind === "teaching-plan" ? (
                     <Link href="/plans/create">Edit</Link>
+                  ) : kind === "theme-plan" ? (
+                    <Link href="/theme-planner">Edit</Link>
                   ) : kind === "activity-ideas" ? (
                     <Link href="/ideas">Edit</Link>
                   ) : (

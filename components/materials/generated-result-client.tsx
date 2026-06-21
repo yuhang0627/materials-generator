@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
@@ -17,6 +18,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 
 export function GeneratedResultClient({ userEmail }: { userEmail: string }) {
+  const router = useRouter();
   const [material, setMaterial] = useState<GeneratedMaterial | null>(null);
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
@@ -43,7 +45,9 @@ export function GeneratedResultClient({ userEmail }: { userEmail: string }) {
     const supabase = createClient();
     const { error } = await supabase
       .from("materials")
-      .insert(toMaterialInsert(material));
+      .insert(toMaterialInsert(material))
+      .select("id")
+      .single();
 
     if (error) {
       setMessage(error.message);
@@ -52,6 +56,7 @@ export function GeneratedResultClient({ userEmail }: { userEmail: string }) {
     }
 
     setMessage("Saved to Supabase history");
+    router.refresh();
     setSaving(false);
   }
 
@@ -60,10 +65,17 @@ export function GeneratedResultClient({ userEmail }: { userEmail: string }) {
       throw new Error("Preview is not ready yet.");
     }
 
+    const element = previewRef.current;
+
     return html2canvas(previewRef.current, {
-      scale: 2,
+      scale: Math.max(3, window.devicePixelRatio || 1),
       backgroundColor: "#fffaf6",
-      useCORS: true
+      useCORS: true,
+      width: element.scrollWidth,
+      height: element.scrollHeight,
+      windowWidth: element.scrollWidth,
+      windowHeight: element.scrollHeight,
+      imageTimeout: 0
     });
   }
 
@@ -91,11 +103,12 @@ export function GeneratedResultClient({ userEmail }: { userEmail: string }) {
       const pdf = new jsPDF({
         orientation: "portrait",
         unit: "mm",
-        format: "a4"
+        format: "a4",
+        compress: false
       });
       const pageWidth = 210;
       const pageHeight = 297;
-      pdf.addImage(imageData, "PNG", 0, 0, pageWidth, pageHeight);
+      pdf.addImage(imageData, "PNG", 0, 0, pageWidth, pageHeight, undefined, "SLOW");
       pdf.save(`${slugify(material?.title || "material-preview")}.pdf`);
       setMessage("PDF downloaded");
     } catch (error) {

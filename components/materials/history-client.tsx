@@ -26,6 +26,21 @@ export function HistoryClient({
     setHistory(initialRows);
   }, [initialRows]);
 
+  useEffect(() => {
+    const supabase = createClient();
+
+    void (async () => {
+      const { data, error } = await supabase
+        .from("materials")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (!error && data) {
+        setHistory(data as MaterialRow[]);
+      }
+    })();
+  }, []);
+
   const filteredHistory = useMemo(() => {
     return history.filter((item) => {
       const matchesFilter =

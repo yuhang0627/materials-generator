@@ -31,9 +31,11 @@ export const MaterialPreview = forwardRef<
         <div className="absolute bottom-10 left-1/3 h-24 w-24 rounded-full bg-lilac/35 blur-3xl" />
 
         <div className="relative">
-          <TopHeader material={material} />
+          {layout.kind === "word-list" ? null : <TopHeader material={material} />}
 
-          {layout.kind === "word-list" ? <WordListPreview layout={layout} /> : null}
+          {layout.kind === "word-list" ? (
+            <WordListPreview material={material} layout={layout} />
+          ) : null}
           {layout.kind === "worksheet" ? <WorksheetPreview layout={layout} /> : null}
           {layout.kind === "visual-cards" ? (
             <VisualCardsPreview layout={layout} />
@@ -95,71 +97,22 @@ function TopHeader({ material }: { material: GeneratedMaterial }) {
   );
 }
 
-function WordListPreview({ layout }: { layout: MaterialVisualLayout }) {
+function WordListPreview({
+  material,
+  layout
+}: {
+  material: GeneratedMaterial;
+  layout: MaterialVisualLayout;
+}) {
   const cards = layout.cards.slice(0, 6);
+  const endingBadges = getEndingBadges(material.form.skillFocus, material.wordList);
 
   return (
-    <div className="space-y-5">
-      <NameDateRow />
-      <Hint text={layout.instructions} />
-
-      <CuteHeroPanel
-        title="Cute classroom word poster"
-        subtitle="A gentle print-ready page with visual cues, buddy stickers, and simple practice steps."
-      />
-
-      <div className="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
-        <div className="rounded-[30px] bg-gradient-to-br from-cream via-white to-mint/28 p-5">
-          <SectionBanner
-            eyebrow="I Can Learn"
-            title="Say, point, and practice with a friend"
-            helper="Keep it playful: point together, clap together, then read the short sentence."
-          />
-          <BuddyStrip />
-          <div className="mt-5 grid gap-3 sm:grid-cols-3">
-            {cards.slice(0, 3).map((card, index) => (
-              <MiniWordChip key={`${card.title}-${index}`} card={card} />
-            ))}
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          <ActivityPanel
-            tone="mint"
-            title="Quick teacher routine"
-            items={[
-              "1. Model the word slowly.",
-              "2. Child points to the matching card.",
-              "3. Read the sentence together.",
-              "4. Repeat with movement or gesture."
-            ]}
-          />
-          <ActivityPanel
-            tone="blush"
-            title="Trace and say"
-            items={cards.slice(0, 4).map((card) => `${card.title}  ____________`)}
-          />
-          <ActivityPanel
-            tone="lilac"
-            title="Check for understanding"
-            items={[
-              "Circle the word you hear.",
-              "Touch the card that matches the action.",
-              "Choose one word and say a short sentence."
-            ]}
-          />
-        </div>
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {cards.map((card, index) => (
-          <TeachingCard key={`${card.title}-${index}`} card={card} index={index} />
-        ))}
-      </div>
-
-      <BottomNote
-        title="Teacher Tip"
-        text="Keep the pace calm, praise quick success, and use gesture support before asking for independent reading."
+    <div>
+      <CartoonPosterPanel
+        material={material}
+        cards={cards}
+        endingBadges={endingBadges}
       />
     </div>
   );
@@ -593,6 +546,124 @@ function MiniWordChip({ card }: { card: MaterialVisualCard }) {
   );
 }
 
+function CartoonPosterPanel({
+  material,
+  cards,
+  endingBadges
+}: {
+  material: GeneratedMaterial;
+  cards: MaterialVisualCard[];
+  endingBadges: string[];
+}) {
+  const posterLines = buildPosterLines(material, cards);
+  const primaryEnding = endingBadges[0] ?? "-ing";
+  const cardBackgrounds = [
+    "from-[#e8f6ff] to-[#f7fffd]",
+    "from-[#eef8ff] to-[#fffef6]",
+    "from-[#f0fbff] to-[#fff7ef]",
+    "from-[#f7f8ff] to-[#fffdf1]",
+    "from-[#f6fbef] to-[#fff7ef]",
+    "from-[#eef7ff] to-[#fff8f3]"
+  ];
+
+  return (
+    <div className="relative overflow-hidden rounded-[38px] border-[4px] border-[#74befe] bg-gradient-to-b from-[#7dc8ff] via-[#c8edff] to-[#fff3bd] p-5 shadow-sm">
+      <div className="absolute inset-x-5 inset-y-5 rounded-[30px] border-2 border-dashed border-white/80" />
+      <div className="absolute left-3 top-2 text-4xl">🇲🇾</div>
+      <div className="absolute right-4 top-2 text-4xl">🎇</div>
+      <div className="absolute bottom-3 left-3 flex h-14 w-14 items-center justify-center rounded-full bg-[#ffe8a6] text-4xl shadow-sm">
+        👧
+      </div>
+      <div className="absolute bottom-3 right-3 flex h-14 w-14 items-center justify-center rounded-full bg-[#ffe8a6] text-4xl shadow-sm">
+        🧒
+      </div>
+      <div className="absolute left-8 top-20 h-10 w-16 rounded-full bg-white/35 blur-lg" />
+      <div className="absolute right-12 top-24 h-10 w-20 rounded-full bg-white/35 blur-lg" />
+
+      <div className="relative px-5 pb-8 pt-5">
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <span className="rounded-full bg-[#ffe36e] px-6 py-3 text-sm font-black uppercase tracking-[0.22em] text-[#2f4a73] shadow-sm">
+            Ending Sounds Fun
+          </span>
+        </div>
+
+        <div className="mt-3 flex flex-wrap items-center justify-center gap-3">
+          <span className="rounded-full bg-[#2748a4] px-8 py-3 text-sm font-black uppercase tracking-[0.22em] text-white shadow-sm">
+            {material.form.theme || "Theme Poster"}
+          </span>
+        </div>
+
+        <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+          {endingBadges.map((badge, index) => (
+            <span
+              key={badge}
+              className={`rounded-[22px] px-5 py-3 font-display text-4xl font-bold lowercase shadow-sm ${
+                index % 3 === 0
+                  ? "bg-[#fff4cd] text-[#ef476f]"
+                  : index % 3 === 1
+                    ? "bg-[#ffe9f2] text-[#3968d6]"
+                    : "bg-[#ecffd8] text-[#34a853]"
+              }`}
+            >
+              {badge}
+            </span>
+          ))}
+        </div>
+
+        <div className="mt-6 flex flex-wrap justify-center gap-3">
+          {[
+            ["👧", "Say it"],
+            ["🧒", "Point to it"],
+            ["⭐", "Try again"],
+            ["🎵", "Clap together"]
+          ].map(([emoji, label]) => (
+            <div
+              key={label}
+              className="rounded-full bg-[#9bd8ff]/40 px-4 py-3 text-sm font-bold text-[#315072] shadow-sm backdrop-blur-sm"
+            >
+              <span className="mr-2">{emoji}</span>
+              {label}
+            </div>
+          ))}
+        </div>
+
+        <div className="mx-auto mt-6 max-w-[38rem] rounded-[30px] bg-gradient-to-b from-[#fffdfa] to-[#fff2f7] px-6 py-6 text-center shadow-inner">
+          {posterLines.map((line, index) => (
+            <p
+              key={`${line}-${index}`}
+              className="text-[15px] font-semibold leading-8 text-ink sm:text-[17px]"
+            >
+              {line}
+            </p>
+          ))}
+        </div>
+
+        <div className="mx-auto mt-6 grid max-w-[40rem] gap-4 sm:grid-cols-2 lg:grid-cols-2">
+          {cards.map((card, index) => (
+            <div
+              key={`${card.title}-${index}`}
+              className={`rounded-[28px] border-2 border-white/90 bg-gradient-to-b ${cardBackgrounds[index % cardBackgrounds.length]} px-4 py-5 text-center shadow-sm`}
+            >
+              <div className="text-4xl">{card.emoji}</div>
+              <div className="mt-3 flex items-center justify-center gap-2">
+                <span className="text-xl text-[#ffcc29]">✦</span>
+                <PosterWordTitle word={card.title} ending={primaryEnding} />
+                <span className="text-xl text-[#ffcc29]">✦</span>
+              </div>
+              <p className="mt-3 text-sm font-semibold leading-6 text-ink/72">
+                {card.subtitle}
+              </p>
+              <p className="mt-3 text-xs font-black uppercase tracking-[0.12em] text-[#3f5976]">
+                Say it. Point it. Read it.
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function TeachingCard({
   card,
   index
@@ -664,6 +735,65 @@ function PosterStickers() {
       <span className="rounded-full bg-[#e7f8d8] px-3 py-1 shadow-sm">🧒</span>
       <span className="rounded-full bg-[#fff2c9] px-3 py-1 shadow-sm">👧</span>
     </div>
+  );
+}
+
+function getEndingBadges(skillFocus: string, words: string[]) {
+  const explicitBadges = Array.from(
+    new Set(
+      (skillFocus.match(/-[a-z]+/gi) ?? []).map((badge) => badge.toLowerCase())
+    )
+  );
+
+  if (explicitBadges.length > 0) {
+    return explicitBadges.slice(0, 4);
+  }
+
+  const derived = Array.from(
+    new Set(
+      words
+        .map((word) => word.toLowerCase().replace(/[^a-z]/g, ""))
+        .filter((word) => word.length >= 3)
+        .map((word) => `-${word.slice(-3)}`)
+    )
+  );
+
+  return (derived.length > 0 ? derived : ["-ing"]).slice(0, 4);
+}
+
+function buildPosterLines(material: GeneratedMaterial, cards: MaterialVisualCard[]) {
+  const firstWords = cards.slice(0, 4).map((card) => card.title.toLowerCase());
+  const lines = [
+    `We wave and smile on ${material.form.theme || "our happy day"}!`,
+    `We keep ${firstWords[0] || "singing"} and ${firstWords[1] || "marching"} in a playful way.`,
+    `We try ${firstWords[2] || "dancing"} and ${firstWords[3] || "carrying"} with cheer,`,
+    "Cute little learners can point, read, and hear!"
+  ];
+
+  return lines;
+}
+
+function PosterWordTitle({ word, ending }: { word: string; ending: string }) {
+  const cleanEnding = ending.replace(/^-/, "").toLowerCase();
+  const lowerWord = word.toLowerCase();
+  const matchesEnding = lowerWord.endsWith(cleanEnding);
+
+  if (!matchesEnding || lowerWord.length <= cleanEnding.length) {
+    return (
+      <p className="font-display text-[2rem] font-bold uppercase leading-none tracking-tight text-[#33475b]">
+        {word}
+      </p>
+    );
+  }
+
+  const base = word.slice(0, word.length - cleanEnding.length).toUpperCase();
+  const endingPart = word.slice(word.length - cleanEnding.length).toUpperCase();
+
+  return (
+    <p className="font-display text-[2rem] font-bold uppercase leading-none tracking-tight">
+      <span className="text-[#33475b]">{base}</span>
+      <span className="text-[#ef476f]">{endingPart}</span>
+    </p>
   );
 }
 

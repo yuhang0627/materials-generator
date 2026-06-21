@@ -206,37 +206,50 @@ export function GeneratedResultClient({ userEmail }: { userEmail: string }) {
       userEmail={userEmail}
       headerAction={<SignOutButton />}
     >
-      <div className="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
-        <div className="space-y-5">
-          <Surface className="animate-fade-up">
-            <SectionTitle
-              eyebrow="Prompt Summary"
-              title="Source settings"
-              description="These values were used to create the current teaching material."
-            />
+      <div className="space-y-5">
+        <Surface className="animate-fade-up">
+          <SectionTitle
+            eyebrow="Source Settings"
+            title="Teaching material summary"
+            description="A quick overview of the prompt values used for this result."
+          />
 
-            <div className="grid gap-3 sm:grid-cols-2">
-              {[
-                ["Theme", material.form.theme],
-                ["Subject", material.form.subject],
-                ["Skill focus", material.form.skillFocus],
-                ["Student level", material.form.studentLevel],
-                ["Output type", material.form.outputType],
-                ["Language", material.form.language],
-                ["Number of items", material.form.numberOfItems],
-                ["Difficulty", material.form.difficulty]
-              ].map(([label, value]) => (
-                <div key={label} className="rounded-[22px] bg-white/80 p-4">
-                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-sage">
-                    {label}
-                  </p>
-                  <p className="mt-2 text-sm font-semibold text-ink">{value}</p>
-                </div>
-              ))}
+          <div className="mt-5 flex flex-wrap gap-3">
+            {[
+              ["Theme", material.form.theme],
+              ["Subject", material.form.subject],
+              ["Skill Focus", material.form.skillFocus],
+              ["Level", material.form.studentLevel],
+              ["Output", material.form.outputType],
+              ["Language", material.form.language],
+              ["Difficulty", material.form.difficulty]
+            ].map(([label, value]) => (
+              <SummaryChip key={label} label={label} value={value} />
+            ))}
+          </div>
+        </Surface>
+
+        <Surface className="animate-fade-up stagger-1">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <SectionTitle
+                eyebrow="Material Preview"
+                title="Canva-style printable layout"
+                description="The printable preview is the main workspace here, with a fixed A4 layout for editing, exporting, and printing."
+              />
             </div>
-          </Surface>
+            <InfoPill>A4 Preview</InfoPill>
+          </div>
 
-          <Surface className="animate-fade-up stagger-1">
+          <div className="overflow-auto rounded-[30px] bg-gradient-to-b from-blush/35 via-cream to-mint/30 p-4 sm:p-5">
+            <div className="min-w-[794px]">
+              <MaterialPreview ref={previewRef} material={material} />
+            </div>
+          </div>
+        </Surface>
+
+        <div className="grid gap-5 xl:grid-cols-[0.72fr_1.28fr]">
+          <Surface className="animate-fade-up stagger-2">
             <SectionTitle
               eyebrow="Actions"
               title="Export and save"
@@ -277,7 +290,7 @@ export function GeneratedResultClient({ userEmail }: { userEmail: string }) {
             ) : null}
           </Surface>
 
-          <Surface className="animate-fade-up stagger-2">
+          <Surface className="animate-fade-up stagger-3">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <SectionTitle
@@ -332,27 +345,19 @@ export function GeneratedResultClient({ userEmail }: { userEmail: string }) {
             </div>
           </Surface>
         </div>
-
-        <Surface className="animate-fade-up stagger-3">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <SectionTitle
-                eyebrow="Material Preview"
-                title="Canva-style printable layout"
-                description="A soft A4 teaching material preview generated from the result content, ready for export as PDF, PNG, or print."
-              />
-            </div>
-            <InfoPill>A4 Preview</InfoPill>
-          </div>
-
-          <div className="overflow-auto rounded-[30px] bg-gradient-to-b from-blush/35 via-cream to-mint/30 p-4 sm:p-5">
-            <div className="min-w-[794px]">
-              <MaterialPreview ref={previewRef} material={material} />
-            </div>
-          </div>
-        </Surface>
       </div>
     </AppShell>
+  );
+}
+
+function SummaryChip({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-full bg-white/88 px-4 py-3 shadow-sm">
+      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-sage">
+        {label}
+      </p>
+      <p className="mt-1 text-sm font-semibold text-ink">{value}</p>
+    </div>
   );
 }
 

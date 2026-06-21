@@ -3,6 +3,7 @@ import type {
   GeneratedMaterial,
   MaterialFormValues
 } from "@/lib/material-generator";
+import { normalizeGeneratedMaterial } from "@/lib/material-generator";
 
 type AIContentShape = {
   wordList: string[];
@@ -174,7 +175,7 @@ export async function generateMaterialWithAI(
     ? await generateWithAnthropic(form)
     : await generateWithOpenAI(form);
 
-  return {
+  return normalizeGeneratedMaterial({
     id: `MAT-${Date.now().toString().slice(-6)}`,
     title: `${titleCase(form.theme || "Classroom")} ${form.outputType}`,
     createdAt: new Date().toISOString(),
@@ -189,5 +190,5 @@ export async function generateMaterialWithAI(
     summary:
       parsed.summary ||
       `Generated ${form.outputType.toLowerCase()} content for ${form.theme}.`
-  };
+  });
 }

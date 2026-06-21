@@ -1,10 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 import { AppShell } from "@/components/app-shell";
 import { InfoPill, SectionTitle, Surface } from "@/components/ui";
 import { SignOutButton } from "@/components/sign-out-button";
+import { MaterialPreview } from "@/components/materials/material-preview";
 import {
   copyText,
   getCurrentMaterial,
@@ -17,6 +20,8 @@ export function GeneratedResultClient({ userEmail }: { userEmail: string }) {
   const [material, setMaterial] = useState<GeneratedMaterial | null>(null);
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
+  const [exporting, setExporting] = useState<"" | "png" | "pdf" | "print">("");
+  const previewRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMaterial(getCurrentMaterial());
@@ -36,7 +41,9 @@ export function GeneratedResultClient({ userEmail }: { userEmail: string }) {
     setMessage("");
 
     const supabase = createClient();
-    const { error } = await supabase.from("materials").insert(toMaterialInsert(material));
+    const { error } = await supabase
+      .from("materials")
+      .insert(toMaterialInsert(material));
 
     if (error) {
       setMessage(error.message);
@@ -46,6 +53,93 @@ export function GeneratedResultClient({ userEmail }: { userEmail: string }) {
 
     setMessage("Saved to Supabase history");
     setSaving(false);
+  }
+
+  async function createCanvas() {
+    if (!previewRef.current) {
+      throw new Error("Preview is not ready yet.");
+    }
+
+    return html2canvas(previewRef.current, {
+      scale: 2,
+      backgroundColor: "#fffaf6",
+      useCORS: true
+    });
+  }
+
+  async function handleDownloadPng() {
+    try {
+      setExporting("png");
+      const canvas = await createCanvas();
+      const link = document.createElement("a");
+      link.href = canvas.toDataURL("image/png");
+      link.download = `${slugify(material?.title || "material-preview")}.png`;
+      link.click();
+      setMessage("PNG downloaded");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Failed to export PNG");
+    } finally {
+      setExporting("");
+    }
+  }
+
+  async function handleDownloadPdf() {
+    try {
+      setExporting("pdf");
+      const canvas = await createCanvas();
+      const imageData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4"
+      });
+      const pageWidth = 210;
+      const pageHeight = 297;
+      pdf.addImage(imageData, "PNG", 0, 0, pageWidth, pageHeight);
+      pdf.save(`${slugify(material?.title || "material-preview")}.pdf`);
+      setMessage("PDF downloaded");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Failed to export PDF");
+    } finally {
+      setExporting("");
+    }
+  }
+
+  async function handlePrint() {
+    if (!previewRef.current) {
+      return;
+    }
+
+    try {
+      setExporting("print");
+      const printWindow = window.open("", "_blank", "width=900,height=1200");
+
+      if (!printWindow) {
+        throw new Error("Unable to open print window.");
+      }
+
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>${material?.title || "Material Preview"}</title>
+            <style>
+              body { margin: 0; padding: 20px; background: #f8f0ea; font-family: "Avenir Next", "Trebuchet MS", sans-serif; }
+              @page { size: A4; margin: 12mm; }
+            </style>
+          </head>
+          <body>${previewRef.current.outerHTML}</body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.focus();
+      printWindow.print();
+      printWindow.close();
+      setMessage("Print dialog opened");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Failed to print preview");
+    } finally {
+      setExporting("");
+    }
   }
 
   if (!material) {
@@ -73,17 +167,17 @@ export function GeneratedResultClient({ userEmail }: { userEmail: string }) {
   return (
     <AppShell
       title="Generated Result"
-      description="This result is generated locally from the teacher's form values, then can be saved into Supabase for real history and reuse."
+      description="Review the structured text output and a printable Canva-style material preview, then export or save the result to Supabase."
       userEmail={userEmail}
       headerAction={<SignOutButton />}
     >
-      <div className="grid gap-5 xl:grid-cols-[0.92fr_1.08fr]">
+      <div className="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
         <div className="space-y-5">
           <Surface className="animate-fade-up">
             <SectionTitle
               eyebrow="Prompt Summary"
               title="Source settings"
-              description="These values were used to create the current sample output."
+              description="These values were used to create the current teaching material."
             />
 
             <div className="grid gap-3 sm:grid-cols-2">
@@ -110,27 +204,28 @@ export function GeneratedResultClient({ userEmail }: { userEmail: string }) {
           <Surface className="animate-fade-up stagger-1">
             <SectionTitle
               eyebrow="Actions"
-              title="Quick actions"
-              description="Copy the most useful sections or save this result into Supabase."
+              title="Export and save"
+              description="Download the preview, print it, copy the Canva prompt, or save the whole result and visual layout into Supabase."
             />
 
             <div className="flex flex-wrap gap-3">
               <ActionButton
-                onClick={() => handleCopy("Word list", material.wordList.join(", "))}
+                onClick={() => void handleDownloadPdf()}
+                disabled={exporting !== ""}
               >
-                Copy Word List
+                {exporting === "pdf" ? "Preparing PDF..." : "Download as PDF"}
               </ActionButton>
               <ActionButton
-                onClick={() =>
-                  handleCopy(
-                    "Worksheet",
-                    material.worksheetActivity
-                      .map((item, index) => `${index + 1}. ${item}`)
-                      .join("\n")
-                  )
-                }
+                onClick={() => void handleDownloadPng()}
+                disabled={exporting !== ""}
               >
-                Copy Worksheet
+                {exporting === "png" ? "Preparing PNG..." : "Download as PNG"}
+              </ActionButton>
+              <ActionButton
+                onClick={() => void handlePrint()}
+                disabled={exporting !== ""}
+              >
+                {exporting === "print" ? "Opening..." : "Print"}
               </ActionButton>
               <ActionButton
                 onClick={() => handleCopy("Canva prompt", material.canvaPrompt)}
@@ -140,91 +235,83 @@ export function GeneratedResultClient({ userEmail }: { userEmail: string }) {
               <ActionButton onClick={() => void handleSave()} disabled={saving}>
                 {saving ? "Saving..." : "Save to History"}
               </ActionButton>
-              <Link
-                href="/materials/create"
-                className="inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-bold text-ink transition hover:bg-cream"
-              >
-                Clear Form
-              </Link>
             </div>
 
-            {message ? <p className="mt-3 text-sm font-semibold text-sage">{message}</p> : null}
+            {message ? (
+              <p className="mt-3 text-sm font-semibold text-sage">{message}</p>
+            ) : null}
           </Surface>
-        </div>
 
-        <Surface className="animate-fade-up stagger-2">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <SectionTitle
-                eyebrow="Generated Output"
-                title={material.title}
-                description={material.summary}
-              />
-            </div>
-            <InfoPill>Local Preview</InfoPill>
-          </div>
-
-          <div className="rounded-[30px] bg-gradient-to-b from-white to-cream p-5 sm:p-6">
-            <div className="rounded-[24px] bg-white/80 p-4">
-              <h3 className="font-display text-xl font-bold text-ink">Word List</h3>
-              <p className="mt-3 text-sm leading-7 text-ink/78">
-                {material.wordList.join(", ")}
-              </p>
+          <Surface className="animate-fade-up stagger-2">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <SectionTitle
+                  eyebrow="Text Output"
+                  title={material.title}
+                  description={material.summary}
+                />
+              </div>
+              <InfoPill>Structured Content</InfoPill>
             </div>
 
-            <div className="mt-4 rounded-[24px] bg-white/80 p-4">
-              <h3 className="font-display text-xl font-bold text-ink">Simple Sentences</h3>
-              <div className="mt-3 space-y-2 text-sm leading-7 text-ink/78">
+            <div className="space-y-4 rounded-[30px] bg-gradient-to-b from-white to-cream p-5">
+              <TextPanel title="Word List">
+                <p>{material.wordList.join(", ")}</p>
+              </TextPanel>
+
+              <TextPanel title="Simple Sentences">
                 {material.sentences.map((sentence) => (
                   <p key={sentence}>{sentence}</p>
                 ))}
-              </div>
-            </div>
+              </TextPanel>
 
-            <div className="mt-4 rounded-[24px] bg-white/80 p-4">
-              <h3 className="font-display text-xl font-bold text-ink">Worksheet Activity</h3>
-              <div className="mt-3 space-y-2 text-sm leading-7 text-ink/78">
+              <TextPanel title="Worksheet Activity">
                 {material.worksheetActivity.map((question, index) => (
                   <p key={question}>
                     {index + 1}. {question}
                   </p>
                 ))}
-              </div>
-            </div>
+              </TextPanel>
 
-            <div className="mt-4 grid gap-4 md:grid-cols-2">
-              {material.visualCardText.map((card, index) => (
-                <div
-                  key={`${card}-${index}`}
-                  className="rounded-[26px] bg-mint/45 p-5"
-                >
-                  <p className="whitespace-pre-line text-sm leading-7 text-ink/78">{card}</p>
-                </div>
-              ))}
-            </div>
+              <TextPanel title="Visual Card Content">
+                {material.visualCardText.map((card) => (
+                  <p key={card} className="whitespace-pre-line">
+                    {card}
+                  </p>
+                ))}
+              </TextPanel>
 
-            <div className="mt-4 rounded-[24px] bg-white/80 p-4">
-              <h3 className="font-display text-xl font-bold text-ink">Canva Prompt</h3>
-              <p className="mt-3 text-sm leading-7 text-ink/78">{material.canvaPrompt}</p>
-            </div>
+              <TextPanel title="Canva Prompt">
+                <p>{material.canvaPrompt}</p>
+              </TextPanel>
 
-            <div className="mt-4 rounded-[24px] bg-white/80 p-4">
-              <h3 className="font-display text-xl font-bold text-ink">Teacher Notes</h3>
-              <div className="mt-3 space-y-2 text-sm leading-7 text-ink/78">
+              <TextPanel title="Teacher Notes">
                 {material.teacherNotes.map((note) => (
                   <p key={note}>• {note}</p>
                 ))}
-              </div>
-            </div>
+              </TextPanel>
 
-            <div className="mt-4 rounded-[24px] bg-white/80 p-4">
-              <h3 className="font-display text-xl font-bold text-ink">
-                Suggested Difficulty Adjustment
-              </h3>
-              <p className="mt-3 text-sm leading-7 text-ink/78">
-                {material.suggestedDifficultyAdjustment}
-              </p>
+              <TextPanel title="Suggested Difficulty Adjustment">
+                <p>{material.suggestedDifficultyAdjustment}</p>
+              </TextPanel>
             </div>
+          </Surface>
+        </div>
+
+        <Surface className="animate-fade-up stagger-3">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <SectionTitle
+                eyebrow="Material Preview"
+                title="Canva-style printable layout"
+                description="A soft A4 teaching material preview generated from the result content, ready for export as PDF, PNG, or print."
+              />
+            </div>
+            <InfoPill>A4 Preview</InfoPill>
+          </div>
+
+          <div className="overflow-auto rounded-[30px] bg-gradient-to-b from-blush/35 via-cream to-mint/30 p-4 sm:p-5">
+            <MaterialPreview ref={previewRef} material={material} />
           </div>
         </Surface>
       </div>
@@ -251,4 +338,23 @@ function ActionButton({
       {children}
     </button>
   );
+}
+
+function TextPanel({
+  children,
+  title
+}: {
+  children: React.ReactNode;
+  title: string;
+}) {
+  return (
+    <div className="rounded-[24px] bg-white/82 p-4">
+      <h3 className="font-display text-xl font-bold text-ink">{title}</h3>
+      <div className="mt-3 space-y-2 text-sm leading-7 text-ink/78">{children}</div>
+    </div>
+  );
+}
+
+function slugify(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, "-");
 }

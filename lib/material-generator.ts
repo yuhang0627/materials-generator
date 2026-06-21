@@ -26,6 +26,36 @@ export type GeneratedMaterial = {
   teacherNotes: string[];
   suggestedDifficultyAdjustment: string;
   summary: string;
+  visualLayout: MaterialVisualLayout;
+};
+
+export type MaterialVisualCard = {
+  emoji: string;
+  title: string;
+  subtitle?: string;
+  body?: string;
+};
+
+export type MaterialVisualSection = {
+  heading: string;
+  lines: string[];
+};
+
+export type MaterialVisualLayout = {
+  kind:
+    | "word-list"
+    | "worksheet"
+    | "visual-cards"
+    | "poster"
+    | "social-story"
+    | "behaviour-worksheet"
+    | "song-chant"
+    | "canva-prompt";
+  title: string;
+  subtitle: string;
+  instructions?: string;
+  cards: MaterialVisualCard[];
+  sections: MaterialVisualSection[];
 };
 
 const STORAGE_KEYS = {
@@ -116,6 +146,33 @@ function titleCase(text: string) {
     .join(" ");
 }
 
+function sentenceForWord(word: string, sentence: string | undefined) {
+  if (sentence && sentence.trim()) {
+    return sentence.trim();
+  }
+
+  return `We are learning ${word.toLowerCase()}.`;
+}
+
+function emojiForWord(word: string, theme: string) {
+  const lower = `${word} ${theme}`.toLowerCase();
+  if (lower.includes("flag") || lower.includes("wave")) return "🚩";
+  if (lower.includes("march")) return "🥁";
+  if (lower.includes("sing") || lower.includes("song")) return "🎵";
+  if (lower.includes("dance")) return "💃";
+  if (lower.includes("carry")) return "👜";
+  if (lower.includes("fly")) return "🪁";
+  if (lower.includes("happy")) return "😊";
+  if (lower.includes("sad")) return "😔";
+  if (lower.includes("calm")) return "🫶";
+  if (lower.includes("help")) return "🤝";
+  if (lower.includes("stop")) return "🛑";
+  if (lower.includes("go")) return "➡️";
+  if (lower.includes("wash")) return "🧼";
+  if (lower.includes("listen")) return "👂";
+  return "🌟";
+}
+
 function buildWordList(form: MaterialFormValues, count: number) {
   const skill = form.skillFocus.toLowerCase();
   const baseWords = findWordBank(form.theme);
@@ -203,7 +260,24 @@ export function generateMaterial(form: MaterialFormValues): GeneratedMaterial {
     teacherNotes: buildTeacherNotes(form, wordList),
     suggestedDifficultyAdjustment:
       "If the child needs more support, use 3 words first with picture choices. If the child is ready for a challenge, ask for one extra sentence using a target word.",
-    summary: `Created ${count} ${form.skillFocus || "target"} items for ${form.studentLevel || "early learners"} in a ${form.difficulty.toLowerCase()} ${form.outputType.toLowerCase()} set around ${form.theme || "the chosen theme"}.`
+    summary: `Created ${count} ${form.skillFocus || "target"} items for ${form.studentLevel || "early learners"} in a ${form.difficulty.toLowerCase()} ${form.outputType.toLowerCase()} set around ${form.theme || "the chosen theme"}.`,
+    visualLayout: {
+      kind: "word-list",
+      title: `${titleCase(form.theme || "Classroom")} ${form.outputType}`,
+      subtitle: form.subject || form.skillFocus || "Teaching material",
+      instructions: "Say each word, point to the picture, and read the sentence.",
+      cards: wordList.map((word, index) => ({
+        emoji: emojiForWord(word, form.theme),
+        title: titleCase(word),
+        subtitle: sentenceForWord(word, buildSentences(wordList, form)[index])
+      })),
+      sections: [
+        {
+          heading: "Teacher Notes",
+          lines: buildTeacherNotes(form, wordList)
+        }
+      ]
+    }
   };
 }
 
@@ -261,7 +335,8 @@ export function toMaterialInsert(material: GeneratedMaterial): MaterialInsert {
       visualCardText: normalized.visualCardText,
       canvaPrompt: normalized.canvaPrompt,
       teacherNotes: normalized.teacherNotes,
-      suggestedDifficultyAdjustment: normalized.suggestedDifficultyAdjustment
+      suggestedDifficultyAdjustment: normalized.suggestedDifficultyAdjustment,
+      visualLayout: normalized.visualLayout
     }
   };
 }
@@ -314,7 +389,29 @@ export function normalizeGeneratedMaterial(material: unknown): GeneratedMaterial
     summary:
       typeof value.summary === "string"
         ? value.summary
-        : "Generated teaching content preview."
+        : "Generated teaching content preview.",
+    visualLayout: normalizeVisualLayout(
+      (value as { visualLayout?: unknown }).visualLayout,
+      {
+        title: typeof value.title === "string" ? value.title : "Generated Material",
+        subtitle:
+          typeof form.subject === "string" && form.subject
+            ? form.subject
+            : "Teaching material",
+        outputType:
+          typeof form.outputType === "string" ? form.outputType : "Word list",
+        theme: typeof form.theme === "string" ? form.theme : "",
+        wordList: ensureStringArray(value.wordList),
+        sentences: ensureStringArray(value.sentences),
+        worksheetActivity: ensureStringArray(
+          value.worksheetActivity ?? value.worksheetQuestions
+        ),
+        visualCardText: ensureStringArray(value.visualCardText),
+        canvaPrompt:
+          typeof value.canvaPrompt === "string" ? value.canvaPrompt : "",
+        teacherNotes: ensureStringArray(value.teacherNotes)
+      }
+    )
   };
 }
 
@@ -366,6 +463,246 @@ export function fromMaterialRow(row: MaterialRow): GeneratedMaterial {
     summary:
       typeof generated.summary === "string"
         ? generated.summary
-        : `Saved ${row.output_type.toLowerCase()} for ${row.theme}.`
+        : `Saved ${row.output_type.toLowerCase()} for ${row.theme}.`,
+    visualLayout: normalizeVisualLayout(generated.visualLayout, {
+      title:
+        typeof generated.title === "string"
+          ? generated.title
+          : `${titleCase(row.theme)} ${row.output_type}`,
+      subtitle: row.subject,
+      outputType: row.output_type,
+      theme: row.theme,
+      wordList: readStringArray(generated.wordList),
+      sentences: readStringArray(generated.sentences),
+      worksheetActivity: readStringArray(
+        generated.worksheetActivity ?? generated.worksheetQuestions
+      ),
+      visualCardText: readStringArray(generated.visualCardText),
+      canvaPrompt:
+        typeof generated.canvaPrompt === "string" ? generated.canvaPrompt : "",
+      teacherNotes: readStringArray(generated.teacherNotes)
+    })
+  };
+}
+
+function normalizeVisualLayout(
+  value: unknown,
+  fallback: {
+    title: string;
+    subtitle: string;
+    outputType: string;
+    theme: string;
+    wordList: string[];
+    sentences: string[];
+    worksheetActivity: string[];
+    visualCardText: string[];
+    canvaPrompt: string;
+    teacherNotes: string[];
+  }
+): MaterialVisualLayout {
+  const existing = (value ?? {}) as Partial<MaterialVisualLayout>;
+  const outputType = fallback.outputType.toLowerCase();
+  const kind: MaterialVisualLayout["kind"] =
+    existing.kind ||
+    (outputType === "worksheet"
+      ? "worksheet"
+      : outputType === "visual cards"
+        ? "visual-cards"
+        : outputType === "poster content"
+          ? "poster"
+          : outputType === "social story"
+            ? "social-story"
+            : outputType === "behaviour worksheet"
+              ? "behaviour-worksheet"
+              : outputType === "song or chant"
+                ? "song-chant"
+                : outputType === "canva prompt"
+                  ? "canva-prompt"
+                  : "word-list");
+
+  const cards: MaterialVisualCard[] = Array.isArray(existing.cards)
+    ? existing.cards.reduce<MaterialVisualCard[]>((acc, card) => {
+        const item = card as Partial<MaterialVisualCard>;
+        if (!item.title) return acc;
+        acc.push({
+          emoji: typeof item.emoji === "string" ? item.emoji : "🌟",
+          title: String(item.title),
+          subtitle:
+            typeof item.subtitle === "string" ? item.subtitle : undefined,
+          body: typeof item.body === "string" ? item.body : undefined
+        });
+        return acc;
+      }, [])
+    : [];
+
+  const sections: MaterialVisualSection[] = Array.isArray(existing.sections)
+    ? existing.sections.reduce<MaterialVisualSection[]>((acc, section) => {
+        const item = section as Partial<MaterialVisualSection>;
+        if (!item.heading) return acc;
+        acc.push({
+          heading: String(item.heading),
+          lines: ensureStringArray(item.lines)
+        });
+        return acc;
+      }, [])
+    : [];
+
+  if (cards.length > 0 || sections.length > 0) {
+    return {
+      kind,
+      title:
+        typeof existing.title === "string" ? existing.title : fallback.title,
+      subtitle:
+        typeof existing.subtitle === "string"
+          ? existing.subtitle
+          : fallback.subtitle,
+      instructions:
+        typeof existing.instructions === "string"
+          ? existing.instructions
+          : undefined,
+      cards,
+      sections
+    };
+  }
+
+  return {
+    kind,
+    title: fallback.title,
+    subtitle: fallback.subtitle,
+    instructions:
+      kind === "worksheet"
+        ? "Read the directions, then circle, match, or write your answers."
+        : "Point, say, read, and practice together.",
+    cards:
+      kind === "poster"
+        ? [
+            {
+              emoji: "🌈",
+              title: fallback.theme || fallback.title,
+              subtitle: "Key ideas for the classroom"
+            }
+          ]
+        : kind === "song-chant"
+          ? fallback.sentences.map((line, index) => ({
+              emoji: index % 2 === 0 ? "👏" : "🎵",
+              title: line,
+              subtitle: "Clap and say it together."
+            }))
+          : kind === "social-story"
+            ? fallback.sentences.map((line, index) => ({
+                emoji: ["👋", "👀", "🧠", "🤝", "😊", "🌟"][index % 6],
+                title: `Step ${index + 1}`,
+                subtitle: line
+              }))
+            : kind === "behaviour-worksheet"
+              ? [
+                  {
+                    emoji: "✅",
+                    title: "Expected",
+                    subtitle: fallback.sentences[0] || "I use kind hands."
+                  },
+                  {
+                    emoji: "❌",
+                    title: "Unexpected",
+                    subtitle:
+                      fallback.worksheetActivity[0] || "I do not grab or shout."
+                  },
+                  {
+                    emoji: "💭",
+                    title: "Think",
+                    subtitle: "How do I help my body feel calm?"
+                  },
+                  {
+                    emoji: "🫶",
+                    title: "Do",
+                    subtitle: "Stop, breathe, and choose a calm action."
+                  }
+                ]
+              : kind === "canva-prompt"
+                ? fallback.wordList.map((word, index) => ({
+                    emoji: emojiForWord(word, fallback.theme),
+                    title: titleCase(word),
+                    subtitle: sentenceForWord(word, fallback.sentences[index])
+                  }))
+                : kind === "visual-cards" || kind === "word-list"
+                  ? fallback.wordList.map((word, index) => ({
+                      emoji: emojiForWord(word, fallback.theme),
+                      title: titleCase(word),
+                      subtitle: sentenceForWord(word, fallback.sentences[index])
+                    }))
+                  : [],
+    sections:
+      kind === "worksheet"
+        ? [
+            {
+              heading: "Instructions",
+              lines: ["Say the word, look carefully, then complete the activity."]
+            },
+            {
+              heading: "Activities",
+              lines:
+                fallback.worksheetActivity.length > 0
+                  ? fallback.worksheetActivity
+                  : ["Circle the correct word.", "Write one simple answer."]
+            }
+          ]
+        : kind === "poster"
+          ? [
+              {
+                heading: "Key Points",
+                lines:
+                  fallback.sentences.length > 0
+                    ? fallback.sentences.slice(0, 5)
+                    : fallback.teacherNotes.slice(0, 5)
+              }
+            ]
+          : kind === "canva-prompt"
+            ? [
+                {
+                  heading: "Sample Canva Prompt",
+                  lines: [fallback.canvaPrompt]
+                }
+              ]
+            : kind === "song-chant"
+              ? [
+                  {
+                    heading: "Action Prompts",
+                    lines: [
+                      "Clap on each key word.",
+                      "Point to the picture.",
+                      "March, wave, or tap together."
+                    ]
+                  }
+                ]
+              : kind === "behaviour-worksheet"
+                ? [
+                    {
+                      heading: "Feel / Think / Do",
+                      lines: [
+                        "Feel: How does my body feel?",
+                        "Think: What is the safe choice?",
+                        "Do: What calm action can I try?"
+                      ]
+                    }
+                  ]
+                : kind === "social-story"
+                  ? [
+                      {
+                        heading: "Story Reminder",
+                        lines:
+                          fallback.teacherNotes.length > 0
+                            ? fallback.teacherNotes.slice(0, 2)
+                            : ["Read each step slowly and point to the icon."]
+                      }
+                    ]
+                  : [
+                      {
+                        heading: "Teacher Notes",
+                        lines:
+                          fallback.teacherNotes.length > 0
+                            ? fallback.teacherNotes
+                            : ["Use the cards one at a time."]
+                      }
+                    ]
   };
 }

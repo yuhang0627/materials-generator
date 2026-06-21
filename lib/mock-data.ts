@@ -112,7 +112,9 @@ export const historyFilters = [
   "Behaviour worksheet",
   "Song Poster",
   "Teaching Plan",
+  "Theme Pack",
   "Theme Planner",
   "theme-plan",
+  "theme-pack",
   "activity-ideas"
 ];

@@ -15,6 +15,11 @@ import {
   saveCurrentThemePlan,
   saveDraftThemePlanForm
 } from "@/lib/theme-planner";
+import {
+  fromThemePackRow,
+  saveCurrentThemePack,
+  saveDraftThemePackForm
+} from "@/lib/theme-packs";
 
 type ResourceLibraryClientProps = {
   rows: MaterialRow[];
@@ -115,6 +120,14 @@ export function ResourceLibraryClient({
       return;
     }
 
+    if (kind === "theme-pack") {
+      const themePack = fromThemePackRow(row);
+      saveCurrentThemePack(themePack);
+      saveDraftThemePackForm(themePack.form);
+      setMessage("Theme pack loaded for editing");
+      return;
+    }
+
     const material = fromMaterialRow(row);
     saveCurrentMaterial(material);
     setMessage("Material loaded as current preview");
@@ -145,7 +158,7 @@ export function ResourceLibraryClient({
         </div>
 
         <div className="mt-4 flex flex-wrap gap-2">
-          {["All", "Favorites", "material", "teaching-plan", "theme-plan", "activity-ideas"].map(
+          {["All", "Favorites", "material", "teaching-plan", "theme-plan", "theme-pack", "activity-ideas"].map(
             (item) => (
               <button
                 key={item}
@@ -169,6 +182,8 @@ export function ResourceLibraryClient({
             const summary =
               kind === "teaching-plan"
                 ? fromTeachingPlanRow(row).summary
+                : kind === "theme-pack"
+                  ? fromThemePackRow(row).summary
                 : kind === "theme-plan"
                   ? fromThemePlanRow(row).summary
                 : kind === "activity-ideas"
@@ -177,6 +192,8 @@ export function ResourceLibraryClient({
             const title =
               kind === "teaching-plan"
                 ? fromTeachingPlanRow(row).title
+                : kind === "theme-pack"
+                  ? fromThemePackRow(row).title
                 : kind === "theme-plan"
                   ? fromThemePlanRow(row).title
                   : kind === "activity-ideas"
@@ -224,6 +241,8 @@ export function ResourceLibraryClient({
                   </button>
                   {kind === "teaching-plan" ? (
                     <Link href="/plans/create">Edit</Link>
+                  ) : kind === "theme-pack" ? (
+                    <Link href="/theme-packs">Edit</Link>
                   ) : kind === "theme-plan" ? (
                     <Link href="/theme-planner">Edit</Link>
                   ) : kind === "activity-ideas" ? (

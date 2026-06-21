@@ -12,6 +12,11 @@ import {
   saveCurrentThemePlan,
   saveDraftThemePlanForm
 } from "@/lib/theme-planner";
+import {
+  fromThemePackRow,
+  saveCurrentThemePack,
+  saveDraftThemePackForm
+} from "@/lib/theme-packs";
 import { createClient } from "@/lib/supabase/client";
 import type { MaterialRow } from "@/lib/supabase/types";
 import { historyFilters } from "@/lib/mock-data";
@@ -105,6 +110,14 @@ export function HistoryClient({
       return;
     }
 
+    if (kind === "theme-pack") {
+      const themePack = fromThemePackRow(item);
+      saveCurrentThemePack(themePack);
+      saveDraftThemePackForm(themePack.form);
+      setMessage("Theme pack loaded");
+      return;
+    }
+
     if (kind === "activity-ideas") {
       const ideas = fromActivityIdeasRow(item);
       setMessage(`Idea pack ready: ${ideas.title}`);
@@ -175,6 +188,8 @@ export function HistoryClient({
             const entry =
               kind === "teaching-plan"
                 ? fromTeachingPlanRow(item)
+                : kind === "theme-pack"
+                  ? fromThemePackRow(item)
                 : kind === "theme-plan"
                   ? fromThemePlanRow(item)
                   : kind === "activity-ideas"
@@ -224,13 +239,17 @@ export function HistoryClient({
                   >
                     {kind === "theme-plan"
                       ? "Load theme planner"
+                      : kind === "theme-pack"
+                        ? "Load theme pack"
                       : kind === "teaching-plan"
                         ? "Load teaching plan"
                         : "Load as current result"}
                   </button>
                   <Link
                     href={
-                      kind === "theme-plan"
+                      kind === "theme-pack"
+                        ? "/theme-packs"
+                        : kind === "theme-plan"
                         ? "/theme-planner"
                         : kind === "teaching-plan"
                           ? "/plans/create"

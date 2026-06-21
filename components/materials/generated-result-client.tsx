@@ -65,18 +65,36 @@ export function GeneratedResultClient({ userEmail }: { userEmail: string }) {
       throw new Error("Preview is not ready yet.");
     }
 
-    const element = previewRef.current;
+    const exportNode = createExportNode(previewRef.current);
 
-    return html2canvas(previewRef.current, {
-      scale: Math.max(3, window.devicePixelRatio || 1),
-      backgroundColor: "#fffaf6",
-      useCORS: true,
-      width: element.scrollWidth,
-      height: element.scrollHeight,
-      windowWidth: element.scrollWidth,
-      windowHeight: element.scrollHeight,
-      imageTimeout: 0
-    });
+    try {
+      return await html2canvas(exportNode, {
+        scale: 3,
+        backgroundColor: "#fffaf6",
+        useCORS: true,
+        width: 794,
+        height: exportNode.scrollHeight,
+        windowWidth: 794,
+        windowHeight: exportNode.scrollHeight,
+        imageTimeout: 0
+      });
+    } finally {
+      exportNode.remove();
+    }
+  }
+
+  function createExportNode(source: HTMLDivElement) {
+    const exportNode = source.cloneNode(true) as HTMLDivElement;
+    exportNode.style.width = "794px";
+    exportNode.style.minWidth = "794px";
+    exportNode.style.maxWidth = "794px";
+    exportNode.style.margin = "0";
+    exportNode.style.position = "fixed";
+    exportNode.style.left = "-10000px";
+    exportNode.style.top = "0";
+    exportNode.style.zIndex = "-1";
+    document.body.appendChild(exportNode);
+    return exportNode;
   }
 
   async function handleDownloadPng() {
@@ -125,9 +143,11 @@ export function GeneratedResultClient({ userEmail }: { userEmail: string }) {
 
     try {
       setExporting("print");
-      const printWindow = window.open("", "_blank", "width=900,height=1200");
+      const exportNode = createExportNode(previewRef.current);
+      const printWindow = window.open("", "_blank", "width=960,height=1280");
 
       if (!printWindow) {
+        exportNode.remove();
         throw new Error("Unable to open print window.");
       }
 
@@ -136,14 +156,16 @@ export function GeneratedResultClient({ userEmail }: { userEmail: string }) {
           <head>
             <title>${material?.title || "Material Preview"}</title>
             <style>
-              body { margin: 0; padding: 20px; background: #f8f0ea; font-family: "Avenir Next", "Trebuchet MS", sans-serif; }
-              @page { size: A4; margin: 12mm; }
+              html, body { margin: 0; padding: 0; background: #f8f0ea; }
+              body { display: flex; justify-content: center; padding: 16px; font-family: "Avenir Next", "Trebuchet MS", sans-serif; }
+              @page { size: A4; margin: 8mm; }
             </style>
           </head>
-          <body>${previewRef.current.outerHTML}</body>
+          <body>${exportNode.outerHTML}</body>
         </html>
       `);
       printWindow.document.close();
+      exportNode.remove();
       printWindow.focus();
       printWindow.print();
       printWindow.close();
@@ -324,7 +346,9 @@ export function GeneratedResultClient({ userEmail }: { userEmail: string }) {
           </div>
 
           <div className="overflow-auto rounded-[30px] bg-gradient-to-b from-blush/35 via-cream to-mint/30 p-4 sm:p-5">
-            <MaterialPreview ref={previewRef} material={material} />
+            <div className="min-w-[794px]">
+              <MaterialPreview ref={previewRef} material={material} />
+            </div>
           </div>
         </Surface>
       </div>

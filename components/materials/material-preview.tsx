@@ -8,7 +8,7 @@ import type {
 } from "@/lib/material-generator";
 
 const pageClassName =
-  "mx-auto min-h-[1123px] w-full max-w-[794px] overflow-hidden rounded-[32px] border border-[#e8ddd3] bg-[#fffaf6] text-ink shadow-soft";
+  "mx-auto min-h-[1123px] w-[794px] min-w-[794px] max-w-none overflow-hidden rounded-[32px] border border-[#e8ddd3] bg-[#fffaf6] text-ink shadow-soft";
 
 const accentBackgrounds = [
   "from-mint/55 to-white",

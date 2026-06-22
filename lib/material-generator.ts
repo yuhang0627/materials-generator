@@ -723,6 +723,25 @@ function normalizeVisualLayout(
               subtitle: "Key ideas for the classroom"
             }
           ]
+        : kind === "matching-activity" ||
+            kind === "cut-paste" ||
+            kind === "colouring-sheet" ||
+            kind === "routine-chart" ||
+            kind === "behaviour-chart" ||
+            kind === "reward-chart"
+          ? fallback.wordList.map((word, index) => ({
+              emoji: emojiForWord(word, fallback.theme),
+              title: titleCase(word),
+              subtitle: sentenceForWord(word, fallback.sentences[index]),
+              body:
+                kind === "colouring-sheet"
+                  ? "Colour the picture and say the word."
+                  : kind === "matching-activity"
+                    ? "Find the matching word."
+                    : kind === "cut-paste"
+                      ? "Cut and paste this card."
+                      : undefined
+            }))
         : kind === "song-chant"
           ? fallback.sentences.map((line, index) => ({
               emoji: index % 2 === 0 ? "👏" : "🎵",
@@ -809,7 +828,7 @@ function normalizeVisualLayout(
                   ]
                 }
               ]
-            : kind === "colouring-sheet"
+        : kind === "colouring-sheet"
               ? [
                   {
                     heading: "Colour And Talk",
@@ -833,16 +852,22 @@ function normalizeVisualLayout(
                   ? [
                       {
                         heading: "Check In",
-                        lines: ["Expected behaviour", "How friends feel", "What to do next"]
+                        lines:
+                          fallback.teacherNotes.length > 0
+                            ? fallback.teacherNotes.slice(0, 3)
+                            : ["Expected behaviour", "How friends feel", "What to do next"]
                       }
                     ]
                   : kind === "reward-chart"
                     ? [
-                        {
-                          heading: "Reward Goals",
-                          lines: ["I try", "I wait", "I listen", "I finish"]
-                        }
-                      ]
+                      {
+                        heading: "Reward Goals",
+                          lines:
+                            fallback.wordList.length > 0
+                              ? fallback.wordList.slice(0, 4).map((word) => `I can ${word.toLowerCase()}`)
+                              : ["I try", "I wait", "I listen", "I finish"]
+                      }
+                    ]
         : kind === "poster"
           ? [
               {

@@ -3,7 +3,7 @@ import type {
   GeneratedMaterial,
   MaterialFormValues
 } from "@/lib/material-generator";
-import { normalizeGeneratedMaterial } from "@/lib/material-generator";
+import { generateMaterial, normalizeGeneratedMaterial } from "@/lib/material-generator";
 import { getStudentLevelProfile } from "@/lib/student-level-engine";
 
 type AIContentShape = {
@@ -182,24 +182,34 @@ async function generateWithAnthropic(form: MaterialFormValues) {
 export async function generateMaterialWithAI(
   form: MaterialFormValues
 ): Promise<GeneratedMaterial> {
+  const baseline = generateMaterial(form);
   const parsed = process.env.ANTHROPIC_API_KEY
     ? await generateWithAnthropic(form)
     : await generateWithOpenAI(form);
 
   return normalizeGeneratedMaterial({
+    ...baseline,
     id: `MAT-${Date.now().toString().slice(-6)}`,
     title: `${titleCase(form.theme || "Classroom")} ${form.outputType}`,
     createdAt: new Date().toISOString(),
     form,
-    wordList: parsed.wordList,
-    sentences: parsed.simpleSentences,
-    worksheetActivity: parsed.worksheetActivity,
-    visualCardText: parsed.visualCardContent,
-    canvaPrompt: parsed.canvaDesignPrompt,
-    teacherNotes: parsed.teacherNotes,
-    suggestedDifficultyAdjustment: parsed.suggestedDifficultyAdjustment,
+    wordList: parsed.wordList.length > 0 ? parsed.wordList : baseline.wordList,
+    sentences:
+      parsed.simpleSentences.length > 0 ? parsed.simpleSentences : baseline.sentences,
+    worksheetActivity:
+      parsed.worksheetActivity.length > 0
+        ? parsed.worksheetActivity
+        : baseline.worksheetActivity,
+    visualCardText:
+      parsed.visualCardContent.length > 0
+        ? parsed.visualCardContent
+        : baseline.visualCardText,
+    canvaPrompt: parsed.canvaDesignPrompt || baseline.canvaPrompt,
+    teacherNotes: parsed.teacherNotes.length > 0 ? parsed.teacherNotes : baseline.teacherNotes,
+    suggestedDifficultyAdjustment:
+      parsed.suggestedDifficultyAdjustment || baseline.suggestedDifficultyAdjustment,
     summary:
       parsed.summary ||
-      `Generated ${form.outputType.toLowerCase()} content for ${form.theme}.`
+      baseline.summary
   });
 }
